@@ -43,13 +43,15 @@ def main():
     print("\n✨ Ready to help Nederlandse gemeentes with AI! ✨\n")
     
     try:
+        loop = os.getenv("UVICORN_LOOP")
         uvicorn.run(
             "app.main:app",
             host="0.0.0.0",
             port=8000,
             reload=True,
             reload_dirs=[str(current_dir / "app")],
-            log_level="info"
+            log_level="info",
+            loop=loop,
         )
     except KeyboardInterrupt:
         print("\n👋 Gemeente AI Assistant Backend stopped")

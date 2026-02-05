@@ -89,41 +89,33 @@ class DocumentLoaderService(
         val chunks = splitter.apply(documents)
         chunkCount = chunks.size
 
-        logger.info("Created $chunkCount chunks, generating embeddings (rate-limited with backoff)...")
+        logger.info("Created $chunkCount chunks, generating embeddings with local ONNX model...")
 
         val cacheFile = File(ragConfig.cachePath)
         cacheFile.parentFile?.mkdirs()
+
+        // With local embeddings, we can batch process - much faster than API calls
+        val batchSize = 50
         var embedded = 0
 
-        for (chunk in chunks) {
-            var attempt = 0
-            var backoffMs = 5000L
+        chunks.chunked(batchSize).forEachIndexed { batchIndex, batch ->
+            try {
+                vectorStore.add(batch)
+                embedded += batch.size
+                logger.info("Embedded $embedded/$chunkCount chunks (batch ${batchIndex + 1})...")
 
-            while (true) {
-                try {
-                    vectorStore.add(listOf(chunk))
-                    embedded++
-                    if (embedded % 100 == 0) {
-                        logger.info("Embedded $embedded/$chunkCount chunks, saving intermediate cache...")
-                        vectorStore.save(cacheFile)
-                    } else if (embedded % 25 == 0) {
-                        logger.info("Embedded $embedded/$chunkCount chunks...")
-                    }
-                    Thread.sleep(1500) // 1.5s between successful calls
-                    break
-                } catch (e: Exception) {
-                    attempt++
-                    if (attempt > 10) {
-                        logger.error("Chunk $embedded failed after 10 retries, saving partial cache ($embedded chunks)...")
-                        vectorStore.save(cacheFile)
-                        isLoaded = embedded > 100 // partial load is better than nothing
-                        logger.info("Partial vector store saved. Available with $embedded/$chunkCount chunks.")
-                        return
-                    }
-                    logger.warn("Chunk $embedded attempt $attempt failed (429 rate limit), backing off ${backoffMs / 1000}s...")
-                    Thread.sleep(backoffMs)
-                    backoffMs = (backoffMs * 2).coerceAtMost(120000) // max 2min backoff
+                // Save intermediate cache every 500 chunks
+                if (embedded % 500 == 0) {
+                    logger.info("Saving intermediate cache...")
+                    vectorStore.save(cacheFile)
                 }
+            } catch (e: Exception) {
+                logger.error("Batch ${batchIndex + 1} failed: ${e.message}")
+                // Save what we have
+                vectorStore.save(cacheFile)
+                isLoaded = embedded > 100
+                logger.info("Partial vector store saved with $embedded chunks.")
+                return
             }
         }
 

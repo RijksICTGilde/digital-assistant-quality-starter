@@ -32,13 +32,22 @@ export const enhancedAPI = {
         mappedRole = choiceToRole[userContext.selectedChoice]
       }
       
+      // Map organization id to type
+      const orgTypeMap = {
+        'local': 'gemeente',
+        'provincial': 'provincie',
+        'national': 'rijk'
+      }
+
       const mappedContext = {
         role: mappedRole,
         roleName: userContext.role?.name || `${userContext.selectedChoice?.toUpperCase()} gebruiker`,
         projectPhase: userContext.projectPhase || userContext.selectedChoice,
         focusAreas: userContext.focusAreas || [],
         specificNeeds: userContext.specificNeeds || [],
-        customContext: userContext.selectedOrganization ? 
+        organizationType: userContext.selectedOrganization ?
+          orgTypeMap[userContext.selectedOrganization.id] || 'overheid' : 'overheid',
+        customContext: userContext.selectedOrganization ?
           `Organisatie niveau: ${userContext.selectedOrganization.name}. Interesse: ${userContext.selectedChoice}` :
           userContext.customContext
       }

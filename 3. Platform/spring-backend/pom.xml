@@ -67,6 +67,12 @@
             <artifactId>spring-ai-vector-store</artifactId>
         </dependency>
 
+        <!-- Spring AI Transformers for local ONNX embeddings (no external API needed) -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-transformers</artifactId>
+        </dependency>
+
         <!-- Kotlin -->
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>

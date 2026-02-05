@@ -48,5 +48,6 @@ quality:
 rag:
   documents-path: ${DOCUMENTS_PATH:../../1. Datasets/Scrapen/scraped_content/content}
   cache-path: ${CACHE_PATH:./cache/vector-store.json}
+  onnx-cache-path: ${ONNX_CACHE_PATH:./cache/onnx-models}
   chunk-size: 800
   chunk-overlap: 100

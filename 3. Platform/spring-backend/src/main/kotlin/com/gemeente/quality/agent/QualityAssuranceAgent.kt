@@ -53,7 +53,7 @@ class QualityAssuranceAgent(
 
         val allSources = (sources + roleSources).distinctBy { it.documentId ?: it.title }
 
-        return RagContext(
+        val result = RagContext(
             formattedContext = formattedContext,
             sourceReferences = sourceRefs,
             knowledgeSources = allSources,
@@ -113,7 +113,8 @@ class QualityAssuranceAgent(
         val prompt = promptBuilder.buildEvaluationPrompt(
             originalQuestion = request.message,
             response = initialResponse.mainAnswer,
-            ragContext = ragContext.formattedContext
+            ragContext = ragContext.formattedContext,
+            organizationType = request.context.organizationType
         )
 
         val evaluationJson = context.ai()
@@ -149,7 +150,8 @@ class QualityAssuranceAgent(
             originalQuestion = request.message,
             originalResponse = initialResponse.mainAnswer,
             evaluation = evaluation,
-            ragContext = ragContext.formattedContext
+            ragContext = ragContext.formattedContext,
+            organizationType = request.context.organizationType
         )
 
         val improvedAnswer = context.ai()

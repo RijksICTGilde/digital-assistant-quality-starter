@@ -15,10 +15,26 @@ class ContextPromptBuilder {
     ): String {
         val hasContext = ragContext.isNotBlank() && !ragContext.contains("Geen relevante bronnen")
 
+        // Determine organization description based on type
+        val orgType = userContext.organizationType ?: "overheid"
+        val orgDescription = when (orgType.lowercase()) {
+            "gemeente" -> "Nederlandse gemeentes"
+            "provincie" -> "Nederlandse provincies"
+            "rijk" -> "de Rijksoverheid"
+            else -> "de Nederlandse overheid"
+        }
+        val orgContext = when (orgType.lowercase()) {
+            "gemeente" -> "gemeentelijke context"
+            "provincie" -> "provinciale context"
+            "rijk" -> "rijksoverheidscontext"
+            else -> "overheidscontext"
+        }
+
         return """
-Je bent een AI assistant voor Nederlandse gemeentes, gespecialiseerd in digitale transformatie en AI implementatie.
+Je bent een AI assistant voor $orgDescription, gespecialiseerd in digitale transformatie en AI implementatie.
 
 GEBRUIKER CONTEXT:
+- Organisatietype: ${orgType.replaceFirstChar { it.uppercase() }}
 - Rol: ${userContext.roleName ?: userContext.role?.value ?: "onbekend"}
 - Projectfase: ${userContext.projectPhase ?: "niet gespecificeerd"}
 - Focusgebieden: ${userContext.focusAreas.joinToString(", ") { it.value }}
@@ -32,18 +48,18 @@ ${if (hasContext) """
 1. Beantwoord de vraag UITSLUITEND op basis van de hierboven gegeven kennisbank informatie
 2. Als de kennisbank informatie niet relevant is voor de vraag, zeg dan eerlijk dat je deze vraag niet kunt beantwoorden op basis van de beschikbare bronnen
 3. Gebruik GEEN algemene kennis die niet in de bronnen staat
-4. Wees specifiek over regelgeving en compliance
+4. Wees specifiek over regelgeving en compliance in $orgContext
 5. Verwijs naar menselijke experts voor complexe juridische interpretaties
 """ else """
 1. De kennisbank bevat GEEN relevante informatie voor deze vraag
-2. Leg uit dat je alleen vragen kunt beantwoorden over digitale transformatie, AI implementatie, en overheidsrichtlijnen voor Nederlandse gemeentes
+2. Leg uit dat je alleen vragen kunt beantwoorden over digitale transformatie, AI implementatie, en overheidsrichtlijnen voor $orgDescription
 3. Geef aan welke onderwerpen je WEL kunt beantwoorden
 4. Beantwoord de vraag NIET met algemene kennis
 """}
 
 RESPONSE FORMAT:
 ${if (hasContext) """
-Geef een duidelijke hoofdrespons die de vraag beantwoordt op basis van de bronnen.
+Geef een duidelijke hoofdrespons die de vraag beantwoordt op basis van de bronnen, gericht op $orgContext.
 """ else """
 Leg vriendelijk uit dat deze vraag buiten je kennisdomein valt en welke onderwerpen je wel kunt helpen.
 """}
@@ -59,10 +75,19 @@ VRAAG: $message
     fun buildEvaluationPrompt(
         originalQuestion: String,
         response: String,
-        ragContext: String
+        ragContext: String,
+        organizationType: String? = null
     ): String {
+        val orgType = organizationType ?: "overheid"
+        val orgContext = when (orgType.lowercase()) {
+            "gemeente" -> "gemeentelijke"
+            "provincie" -> "provinciale"
+            "rijk" -> "rijksoverheids"
+            else -> "overheids"
+        }
+
         return """
-Je bent een kwaliteitsbeoordelaar voor AI-responses van een Nederlandse overheids-assistent.
+Je bent een kwaliteitsbeoordelaar voor AI-responses van een Nederlandse ${orgContext}-assistent.
 
 Beoordeel de volgende response op 4 dimensies (score 0.0 tot 1.0):
 
@@ -110,8 +135,17 @@ Geef je beoordeling UITSLUITEND als JSON (geen andere tekst):
         originalQuestion: String,
         originalResponse: String,
         evaluation: QualityEvaluation,
-        ragContext: String
+        ragContext: String,
+        organizationType: String? = null
     ): String {
+        val orgType = organizationType ?: "overheid"
+        val orgContext = when (orgType.lowercase()) {
+            "gemeente" -> "gemeentelijke"
+            "provincie" -> "provinciale"
+            "rijk" -> "rijksoverheids"
+            else -> "overheids"
+        }
+
         val suggestions = evaluation.failedDimensions.joinToString("\n") { dim ->
             val label = when (dim) {
                 QualityDimension.RELEVANCE -> "Relevantie"
@@ -125,7 +159,7 @@ Geef je beoordeling UITSLUITEND als JSON (geen andere tekst):
         }
 
         return """
-Je bent een AI-assistent die een eerder antwoord moet verbeteren voor een Nederlandse overheidscontext.
+Je bent een AI-assistent die een eerder antwoord moet verbeteren voor een Nederlandse ${orgContext}context.
 
 OORSPRONKELIJKE VRAAG:
 $originalQuestion
@@ -142,7 +176,7 @@ $ragContext
 OPDRACHT:
 Schrijf een verbeterd antwoord dat de genoemde verbeterpunten adresseert.
 Behoud de goede aspecten van het oorspronkelijke antwoord.
-Antwoord in het Nederlands, professioneel en geschikt voor overheidscontext.
+Antwoord in het Nederlands, professioneel en geschikt voor ${orgContext}context.
 Voeg GEEN bronverwijzingen of vervolgvragen toe.
         """.trimIndent()
     }

@@ -8,6 +8,7 @@ data class UserContext(
     @JsonProperty("projectPhase") val projectPhase: String? = null,
     @JsonProperty("focusAreas") val focusAreas: List<FocusArea> = emptyList(),
     @JsonProperty("specificNeeds") val specificNeeds: List<String> = emptyList(),
+    @JsonProperty("organizationType") val organizationType: String? = null,
     @JsonProperty("customContext") val customContext: String? = null
 )
 

@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class RagConfig(
     val documentsPath: String = "../../1. Datasets/Scrapen/scraped_content/content",
     val cachePath: String = "./cache/vector-store.json",
+    val onnxCachePath: String = "./cache/onnx-models",
     val chunkSize: Int = 800,
     val chunkOverlap: Int = 100
 )

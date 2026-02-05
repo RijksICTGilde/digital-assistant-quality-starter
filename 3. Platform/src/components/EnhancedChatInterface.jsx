@@ -266,7 +266,8 @@ Er ging iets mis met de API verbinding. Dit is een fallback response.
         complianceChecks: complianceChecks,
         followUpSuggestions: response.follow_up_suggestions || [],
         needsHumanHelp: response.needs_human_expert || response.needs_human_help || false,
-        processingTime: response.processing_time_ms || response.responseTime
+        processingTime: response.processing_time_ms || response.responseTime,
+        triage: response.triage || null
       }
 
       setMessages(prev => [...prev, aiMessage])
@@ -506,10 +507,20 @@ Als het probleem aanhoudt, neem contact op met support.`,
         {/* Message Metadata */}
         <div className="flex items-center justify-between text-xs text-chatbot-neutral-400 border-t border-chatbot-neutral-100 pt-2">
           <div className="flex items-center space-x-3">
-            <span>{formatResponseType(message.responseType)}</span>
-            <span className={getConfidenceColor(message.confidence)}>
-              Vertrouwen: {formatConfidence(message.confidence)}
-            </span>
+            {message.triage?.route === 'faq' ? (
+              <span className="text-green-600">🎯 FAQ Match</span>
+            ) : (
+              <span>{formatResponseType(message.responseType)}</span>
+            )}
+            {message.triage?.faq_match?.score ? (
+              <span className="text-green-600">
+                FAISS: {(message.triage.faq_match.score * 100).toFixed(1)}%
+              </span>
+            ) : (
+              <span className={getConfidenceColor(message.confidence)}>
+                Vertrouwen: {formatConfidence(message.confidence)}
+              </span>
+            )}
             {message.processingTime && (
               <span>⏱️ {formatProcessingTime(message.processingTime)}</span>
             )}

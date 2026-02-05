@@ -14,13 +14,13 @@ const STEPS = {
 }
 
 function App() {
-  const [currentStep, setCurrentStep] = useState(STEPS.LANDING)
+  const [currentStep, setCurrentStep] = useState(STEPS.CHAT)
   const [userContext, setUserContext] = useState({
-    selectedChoice: null,
-    selectedOrganization: null,
-    role: null,
-    projectPhase: null,
-    focusArea: null,
+    selectedChoice: 'hoe',
+    selectedOrganization: { id: 'local', name: 'Gemeente' },
+    role: { id: 'hoe-local', name: 'Chatbot gebruiker' },
+    projectPhase: 'hoe',
+    focusArea: 'local',
     specificNeeds: []
   })
   const [isLoading, setIsLoading] = useState(false)

@@ -19,6 +19,17 @@ from typing_extensions import TypedDict
 from app.features.memory.models import QAIndexEntry, SessionMemory
 from app.features.memory.session_store import SessionStore
 from app.features.memory.tools import create_tools, make_execute_tools_node
+from app.features.memory.validators import (
+    _bundle_triage_response,
+    _default_triage,
+    make_guardrail_input_node,
+    make_guardrail_output_node,
+    make_triage_faq_node,
+    make_triage_intent_node,
+    make_triage_relevance_node,
+    make_validate_sources_node,
+    make_validate_tone_node,
+)
 
 # Maximum tool-call rounds before forcing a text reply
 MAX_TOOL_ROUNDS = 3
@@ -74,6 +85,14 @@ class ChatState(TypedDict, total=False):
     unique_sources: list
     source_ids: list
     response: dict
+
+    # --- Triage (set by triage validators, before LLM) ---
+    triage: dict  # {route, skip_llm, early_response, triage_log}
+
+    # --- Validation (set by validator nodes, after LLM) ---
+    source_validation: dict   # {grounded, issues, confidence}
+    tone_validation: dict     # {appropriate, original_text, adjustments}
+    output_guardrail: dict    # {safe, issues, original_text}
 
     # --- Internal: track tool rounds ---
     tool_rounds: int
@@ -246,6 +265,14 @@ def _bundle_sources(state: ChatState) -> dict:
         "unique_sources": unique_sources,
         "source_ids": source_ids,
     }
+
+
+def _should_call_llm(state: ChatState) -> str:
+    """Conditional edge after triage: skip LLM when triage says so."""
+    triage = state.get("triage") or {}
+    if triage.get("skip_llm", False):
+        return "bundle_triage_response"
+    return "build_prompt"
 
 
 def _should_update_memory(state: ChatState) -> str:
@@ -453,6 +480,12 @@ def _format_response(state: ChatState) -> dict:
             "relevant_regulations": [],
             "processing_time_ms": 0,
             "session_id": session.get("session_id", ""),
+            "validation": {
+                "sources": state.get("source_validation", {}),
+                "tone": state.get("tone_validation", {}),
+                "output_guardrail": state.get("output_guardrail", {}),
+            },
+            "triage": state.get("triage", {}),
         }
     }
 
@@ -479,8 +512,15 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
 
     # Build node functions
     load_session = _make_load_session(session_store)
+    guardrail_input = make_guardrail_input_node()
+    triage_relevance = make_triage_relevance_node()
+    triage_faq = make_triage_faq_node()
+    triage_intent = make_triage_intent_node()
     call_llm = _make_call_llm(llm_with_tools)
     execute_tools = make_execute_tools_node(tools, _captured_sources)
+    validate_sources = make_validate_sources_node(llm)
+    validate_tone = make_validate_tone_node(llm)
+    guardrail_output = make_guardrail_output_node()
     update_memory = _make_update_memory(llm)
     save_session = _make_save_session(session_store)
 
@@ -489,31 +529,70 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
         _state_ref["session"] = state.get("session", {})
         return await call_llm(state)
 
+    # Wrapper to initialise triage state before the first guardrail/triage node
+    async def guardrail_input_with_init(state: ChatState) -> dict:
+        if "triage" not in state or not state.get("triage"):
+            # Seed the triage dict so all downstream validators can read/mutate it
+            result = await guardrail_input({**state, "triage": _default_triage()})
+            if "triage" not in result:
+                result["triage"] = _default_triage()
+            return result
+        return await guardrail_input(state)
+
     # Build graph
     graph = StateGraph(ChatState)
 
     graph.add_node("load_session", load_session)
+    graph.add_node("guardrail_input", guardrail_input_with_init)
+    graph.add_node("triage_relevance", triage_relevance)
+    graph.add_node("triage_faq", triage_faq)
+    graph.add_node("triage_intent", triage_intent)
+    graph.add_node("bundle_triage_response", _bundle_triage_response)
     graph.add_node("build_prompt", _build_prompt)
     graph.add_node("call_llm", call_llm_with_sync)
     graph.add_node("execute_tools", execute_tools)
     graph.add_node("bundle_sources", _bundle_sources)
+    graph.add_node("validate_sources", validate_sources)
+    graph.add_node("validate_tone", validate_tone)
+    graph.add_node("guardrail_output", guardrail_output)
     graph.add_node("update_memory", update_memory)
     graph.add_node("save_session", save_session)
     graph.add_node("format_response", _format_response)
 
     # Edges
     graph.add_edge(START, "load_session")
-    graph.add_edge("load_session", "build_prompt")
+
+    # ── Input guardrail + triage pipeline (before LLM) ──────────
+    graph.add_edge("load_session", "guardrail_input")
+    graph.add_edge("guardrail_input", "triage_relevance")
+    graph.add_edge("triage_relevance", "triage_faq")
+    graph.add_edge("triage_faq", "triage_intent")
+    # After triage: either skip LLM or proceed normally
+    graph.add_conditional_edges("triage_intent", _should_call_llm, {
+        "build_prompt": "build_prompt",
+        "bundle_triage_response": "bundle_triage_response",
+    })
+
+    # ── LLM pipeline (normal flow) ──────────────────────────────
     graph.add_edge("build_prompt", "call_llm")
     graph.add_conditional_edges("call_llm", _should_continue, {
         "execute_tools": "execute_tools",
         "bundle_sources": "bundle_sources",
     })
     graph.add_edge("execute_tools", "call_llm")
-    graph.add_conditional_edges("bundle_sources", _should_update_memory, {
+    graph.add_edge("bundle_sources", "validate_sources")
+    graph.add_edge("validate_sources", "validate_tone")
+
+    # ── Output guardrail (both paths converge here) ─────────────
+    graph.add_edge("validate_tone", "guardrail_output")
+    graph.add_edge("bundle_triage_response", "guardrail_output")
+
+    # ── Memory update or straight to response ───────────────────
+    graph.add_conditional_edges("guardrail_output", _should_update_memory, {
         "update_memory": "update_memory",
         "format_response": "format_response",
     })
+
     graph.add_edge("update_memory", "save_session")
     graph.add_edge("save_session", "format_response")
     graph.add_edge("format_response", END)

@@ -1,0 +1,553 @@
+{
+  "version": "1.1",
+  "faqs": [
+    {
+      "id": "faq-001",
+      "category": "algemeen",
+      "questions": [
+        "Wat doet deze AI assistent?",
+        "Waar kan ik hulp mee krijgen?",
+        "Wat zijn de mogelijkheden?",
+        "Wat kan deze chatbot?",
+        "Waarmee kan je me helpen?",
+        "Wat voor vragen kan ik stellen?",
+        "Welke onderwerpen ken je?"
+      ],
+      "answer": "Deze AI assistent helpt gemeenteambtenaren met vragen over digitale transformatie, AI implementatie, AVG/GDPR compliance, en IT-inkoop. Stel gerust een specifieke vraag!",
+      "metadata": {"priority": "high"}
+    },
+    {
+      "id": "faq-002",
+      "category": "ai_act",
+      "questions": [
+        "Wanneer treedt de AI Act in werking?",
+        "Wanneer gaat de AI Act in?",
+        "Vanaf wanneer geldt de AI Act?",
+        "Wat is de ingangsdatum van de AI Act?",
+        "AI Act tijdlijn",
+        "Wanneer moet ik voldoen aan de AI Act?",
+        "Wat zijn de deadlines van de AI Act?",
+        "AI verordening wanneer van kracht?"
+      ],
+      "answer": "De AI Act (EU AI-verordening) is in augustus 2024 in werking getreden. De verplichtingen worden gefaseerd ingevoerd:\n\n- **Februari 2025**: Verboden AI-praktijken (zoals sociale scoring)\n- **Augustus 2025**: Verplichtingen voor AI-modellen voor algemene doeleinden\n- **Augustus 2026**: Volledige toepassing voor hoog-risico AI-systemen\n\nGemeenten moeten nu al beginnen met inventariseren welke AI-systemen zij gebruiken en in welke risicocategorie deze vallen.",
+      "metadata": {"priority": "high", "source": "EU AI Act"}
+    },
+    {
+      "id": "faq-003",
+      "category": "avg",
+      "questions": [
+        "Wat is een DPIA?",
+        "Wat betekent DPIA?",
+        "Wanneer moet ik een DPIA doen?",
+        "Data Protection Impact Assessment uitleg",
+        "Gegevensbeschermingseffectbeoordeling",
+        "Privacy impact assessment",
+        "Wanneer is een DPIA verplicht?",
+        "DPIA uitvoeren wanneer?",
+        "PIA privacy impact assessment"
+      ],
+      "answer": "Een DPIA (Data Protection Impact Assessment) is een instrument om vooraf de privacyrisico's van een gegevensverwerking in kaart te brengen. Een DPIA is verplicht wanneer:\n\n- Er sprake is van grootschalige verwerking van bijzondere persoonsgegevens\n- Er systematisch en uitgebreid persoonlijke aspecten worden geëvalueerd (profiling)\n- Er publiek toegankelijke ruimten systematisch worden gemonitord\n- Nieuwe technologieën worden ingezet met hoge privacyrisico's\n\nDe Autoriteit Persoonsgegevens heeft een lijst gepubliceerd met verwerkingen waarvoor een DPIA verplicht is.",
+      "metadata": {"priority": "high", "source": "AVG Art. 35"},
+      "sources": [
+        {
+          "title": "DPIA uitvoeren - Autoriteit Persoonsgegevens",
+          "url": "https://www.autoriteitpersoonsgegevens.nl/themas/basis-avg/praktisch-avg/data-protection-impact-assessment-dpia",
+          "section_title": "Wanneer is een DPIA verplicht?",
+          "snippet": "Een DPIA is verplicht als een verwerking waarschijnlijk een hoog risico inhoudt voor de rechten en vrijheden van personen.",
+          "relevance_score": 0.95
+        },
+        {
+          "title": "AVG Artikel 35 - Gegevensbeschermingseffectbeoordeling",
+          "url": "https://eur-lex.europa.eu/legal-content/NL/TXT/?uri=CELEX:32016R0679#d1e3546-1-1",
+          "section_title": "Artikel 35 AVG",
+          "snippet": "Wanneer een soort verwerking een hoog risico inhoudt voor de rechten en vrijheden van natuurlijke personen, voert de verwerkingsverantwoordelijke voorafgaand een beoordeling uit.",
+          "relevance_score": 0.92
+        },
+        {
+          "title": "Lijst DPIA-verplichte verwerkingen",
+          "url": "https://www.autoriteitpersoonsgegevens.nl/documenten/lijst-van-verwerkingen-waarvoor-een-dpia-verplicht-is",
+          "section_title": "Verplichte DPIA lijst",
+          "snippet": "De AP heeft een lijst gepubliceerd met verwerkingen waarvoor een DPIA verplicht is, waaronder grootschalige verwerkingen en profiling.",
+          "relevance_score": 0.88
+        }
+      ]
+    },
+    {
+      "id": "faq-004",
+      "category": "inkoop",
+      "questions": [
+        "Waar vind ik de GIBIT?",
+        "Wat is de GIBIT?",
+        "Gemeentelijke Inkoopvoorwaarden IT",
+        "GIBIT voorwaarden",
+        "IT inkoopvoorwaarden gemeente",
+        "Standaard inkoopvoorwaarden software",
+        "GIBIT 2020",
+        "Inkoopvoorwaarden IT gemeente"
+      ],
+      "answer": "De GIBIT (Gemeentelijke Inkoopvoorwaarden bij IT) zijn de standaard inkoopvoorwaarden voor IT-producten en diensten voor gemeenten. Je vindt de actuele versie op:\n\n- **VNG website**: https://vng.nl/rubrieken/inkoop-en-aanbesteden/gibit\n- **PIANOo**: Het Expertisecentrum Aanbesteden heeft ook informatie over de GIBIT\n\nDe GIBIT 2020 is de meest recente versie en bevat bepalingen over intellectueel eigendom, aansprakelijkheid, en exit-regelingen.",
+      "metadata": {"priority": "medium", "source": "VNG"}
+    },
+    {
+      "id": "faq-005",
+      "category": "algoritmes",
+      "questions": [
+        "Moet ik een algoritme registreren?",
+        "Wanneer moet een algoritme in het algoritmeregister?",
+        "Algoritmeregister verplicht?",
+        "Registratie algoritmes gemeente",
+        "Moet mijn algoritme geregistreerd worden?",
+        "Algoritmeregister overheid",
+        "Welke algoritmes moeten gepubliceerd worden?",
+        "Transparantie algoritmes gemeente"
+      ],
+      "answer": "Ja, overheden zijn verplicht om impactvolle algoritmes te registreren in het Algoritmeregister. De registratieplicht geldt voor:\n\n- **Hoog-risico algoritmes**: Verplicht te registreren\n- **Impactvolle algoritmes**: Algoritmes die directe gevolgen hebben voor burgers\n- **AI-systemen**: Onder de AI Act komen aanvullende registratieverplichtingen\n\nHet Nederlandse Algoritmeregister is te vinden op https://algoritmes.overheid.nl. Gemeenten moeten hun algoritmes hier publiceren met informatie over doel, werking, en verantwoording.",
+      "metadata": {"priority": "high", "source": "Algoritmeregister"}
+    },
+    {
+      "id": "faq-006",
+      "category": "avg",
+      "questions": [
+        "Hoe lang mag ik persoonsgegevens bewaren?",
+        "Wat zijn de bewaartermijnen AVG?",
+        "Bewaartermijn persoonsgegevens gemeente",
+        "Wanneer moet ik gegevens verwijderen?",
+        "Bewaartermijnen persoonsgegevens",
+        "Hoelang data bewaren AVG?",
+        "Selectielijst gemeente bewaartermijnen",
+        "Archiefwet bewaartermijnen"
+      ],
+      "answer": "De AVG schrijft geen specifieke bewaartermijnen voor, maar stelt dat persoonsgegevens niet langer bewaard mogen worden dan noodzakelijk voor het doel. Voor gemeenten gelden wel specifieke wettelijke termijnen:\n\n- **Selectielijst gemeenten**: De VNG Selectielijst bepaalt bewaartermijnen voor gemeentelijke documenten\n- **Archiefwet**: Bepaalde documenten moeten permanent bewaard worden\n- **Specifieke wetgeving**: Bijv. WMO, Jeugdwet hebben eigen termijnen\n\nHet is belangrijk om een verwerkingsregister bij te houden waarin bewaartermijnen zijn vastgelegd.",
+      "metadata": {"priority": "medium", "source": "AVG/Archiefwet"}
+    },
+    {
+      "id": "faq-007",
+      "category": "ai_act",
+      "questions": [
+        "Wat zijn hoog-risico AI-systemen?",
+        "Welke AI is hoog-risico?",
+        "Hoog risico AI voorbeelden",
+        "AI Act risicocategorieën",
+        "Welke AI systemen zijn risicovol?",
+        "Classificatie AI systemen",
+        "AI risico categorieën",
+        "Annex III AI Act"
+      ],
+      "answer": "Onder de AI Act worden AI-systemen als hoog-risico geclassificeerd wanneer ze worden ingezet in kritieke gebieden. Voor gemeenten relevante voorbeelden:\n\n- **Biometrische identificatie**: Gezichtsherkenning in openbare ruimtes\n- **Onderwijs**: Systemen die leerlingen beoordelen of toegang bepalen\n- **Werkgelegenheid**: AI voor werving, selectie of prestatiebeoordeling\n- **Toegang tot diensten**: Systemen die bepalen of iemand recht heeft op uitkeringen of voorzieningen\n- **Rechtshandhaving**: Risicotaxatie-instrumenten\n\nHoog-risico systemen moeten voldoen aan strenge eisen rond transparantie, menselijk toezicht, en documentatie.",
+      "metadata": {"priority": "high", "source": "EU AI Act Annex III"}
+    },
+    {
+      "id": "faq-008",
+      "category": "security",
+      "questions": [
+        "Wat is de BIO?",
+        "Baseline Informatiebeveiliging Overheid",
+        "BIO normenkader",
+        "Informatiebeveiliging gemeente standaard",
+        "Informatiebeveiliging standaard overheid",
+        "BIO compliance",
+        "ENSIA verantwoording",
+        "ISO 27001 overheid"
+      ],
+      "answer": "De BIO (Baseline Informatiebeveiliging Overheid) is het normenkader voor informatiebeveiliging bij de overheid. Belangrijke punten:\n\n- **Verplicht**: Alle overheden moeten voldoen aan de BIO\n- **Gebaseerd op ISO 27001/27002**: Internationale standaard voor informatiebeveiliging\n- **Risicogebaseerd**: Maatregelen worden bepaald op basis van risico-analyse\n- **Jaarlijkse ENSIA-verantwoording**: Gemeenten leggen verantwoording af via ENSIA\n\nDe BIO bevat maatregelen op gebied van toegangsbeveiliging, cryptografie, fysieke beveiliging, en incident management.",
+      "metadata": {"priority": "medium", "source": "BIO"}
+    },
+    {
+      "id": "faq-009",
+      "category": "avg",
+      "questions": [
+        "Wat is een verwerkingsregister?",
+        "Register van verwerkingsactiviteiten",
+        "Moet ik een verwerkingsregister bijhouden?",
+        "AVG verwerkingsregister verplicht?",
+        "Welke verwerkingen moet ik registreren?"
+      ],
+      "answer": "Een verwerkingsregister is een overzicht van alle verwerkingen van persoonsgegevens binnen uw organisatie. Het is verplicht onder de AVG (Art. 30) voor:\n\n- Organisaties met meer dan 250 medewerkers\n- Bij verwerking van bijzondere persoonsgegevens\n- Bij niet-incidentele verwerkingen\n\nHet register moet bevatten:\n- Naam en contactgegevens verwerkingsverantwoordelijke\n- Verwerkingsdoeleinden\n- Categorieën betrokkenen en persoonsgegevens\n- Ontvangers van gegevens\n- Bewaartermijnen\n- Beschrijving beveiligingsmaatregelen",
+      "metadata": {"priority": "medium", "source": "AVG Art. 30"}
+    },
+    {
+      "id": "faq-010",
+      "category": "avg",
+      "questions": [
+        "Wat is een FG?",
+        "Functionaris Gegevensbescherming",
+        "Moet mijn gemeente een FG hebben?",
+        "DPO Data Protection Officer",
+        "Wanneer is een FG verplicht?",
+        "Taken functionaris gegevensbescherming"
+      ],
+      "answer": "Een Functionaris Gegevensbescherming (FG) of Data Protection Officer (DPO) is verplicht voor alle overheidsorganisaties, inclusief gemeenten. De FG:\n\n- **Is onafhankelijk**: Mag geen instructies ontvangen over de uitvoering van taken\n- **Adviseert**: Over AVG-compliance en privacyvraagstukken\n- **Controleert**: De naleving van privacywetgeving\n- **Is contactpunt**: Voor betrokkenen en de Autoriteit Persoonsgegevens\n\nDe FG moet voldoende middelen en toegang krijgen om de taken uit te voeren. De aanstelling moet gemeld worden bij de AP.",
+      "metadata": {"priority": "high", "source": "AVG Art. 37-39"}
+    },
+    {
+      "id": "faq-011",
+      "category": "ai_act",
+      "questions": [
+        "Wat is verboden onder de AI Act?",
+        "Welke AI is verboden?",
+        "Verboden AI praktijken",
+        "AI Act verboden toepassingen",
+        "Sociale scoring verboden?"
+      ],
+      "answer": "De AI Act verbiedt bepaalde AI-toepassingen die als onaanvaardbaar risico worden beschouwd:\n\n- **Sociale scoring**: AI-systemen die burgers beoordelen op sociaal gedrag\n- **Manipulatie**: Systemen die subliminale technieken gebruiken om gedrag te beïnvloeden\n- **Exploitatie kwetsbare groepen**: AI die misbruik maakt van kwetsbaarheden\n- **Real-time biometrische identificatie**: In openbare ruimtes voor rechtshandhaving (met uitzonderingen)\n- **Emotieherkenning**: Op werkplekken en in onderwijsinstellingen\n- **Voorspellend politiewerk**: Gebaseerd op profilering zonder objectieve feiten\n\nDeze verboden gaan in per februari 2025.",
+      "metadata": {"priority": "high", "source": "EU AI Act Art. 5"}
+    },
+    {
+      "id": "faq-012",
+      "category": "inkoop",
+      "questions": [
+        "Wat is een verwerkersovereenkomst?",
+        "Wanneer heb ik een verwerkersovereenkomst nodig?",
+        "Verwerker vs verwerkingsverantwoordelijke",
+        "AVG leverancier contract",
+        "Data processing agreement"
+      ],
+      "answer": "Een verwerkersovereenkomst is verplicht wanneer u persoonsgegevens laat verwerken door een externe partij (verwerker). Essentiële elementen:\n\n- **Onderwerp en duur**: Wat wordt verwerkt en voor hoe lang\n- **Instructies**: Verwerker handelt alleen op uw instructie\n- **Beveiliging**: Passende technische en organisatorische maatregelen\n- **Subverwerkers**: Toestemming vereist voor inschakeling\n- **Bijstand**: Bij verzoeken van betrokkenen en datalekken\n- **Audit-recht**: U mag de verwerker controleren\n- **Verwijdering**: Na afloop moeten gegevens worden verwijderd\n\nDe GIBIT bevat standaardbepalingen voor verwerkersovereenkomsten.",
+      "metadata": {"priority": "medium", "source": "AVG Art. 28"}
+    },
+    {
+      "id": "faq-013",
+      "category": "security",
+      "questions": [
+        "Wat moet ik doen bij een datalek?",
+        "Datalek melden",
+        "Wanneer datalek melden AP?",
+        "Meldplicht datalekken",
+        "Datalek procedure gemeente"
+      ],
+      "answer": "Bij een datalek moet u binnen 72 uur handelen:\n\n**1. Beoordeel het risico:**\n- Welke gegevens zijn gelekt?\n- Hoeveel personen zijn getroffen?\n- Wat is de kans op schade?\n\n**2. Melden bij AP (binnen 72 uur) als:**\n- Er kans is op risico voor de rechten en vrijheden van betrokkenen\n- Melding via https://autoriteitpersoonsgegevens.nl\n\n**3. Informeer betrokkenen als:**\n- Er een hoog risico is voor hun rechten en vrijheden\n\n**4. Documenteer:**\n- Alle datalekken in een intern register\n- Ook als u niet hoeft te melden bij de AP\n\nRegistreer ook in uw datalekkenregister wat u heeft gedaan om herhaling te voorkomen.",
+      "metadata": {"priority": "high", "source": "AVG Art. 33-34"}
+    },
+    {
+      "id": "faq-014",
+      "category": "ai_act",
+      "questions": [
+        "Moet ik AI-gegenereerde content labelen?",
+        "Transparantie AI content",
+        "Deepfakes labelen",
+        "AI watermark verplicht?",
+        "Kennisgeving AI gebruik"
+      ],
+      "answer": "Ja, de AI Act bevat transparantieverplichtingen voor AI-gegenereerde content:\n\n**Verplichte kennisgeving aan gebruikers:**\n- Chatbots moeten duidelijk maken dat men met AI communiceert\n- Emotieherkenning- en biometrische systemen moeten gebruikers informeren\n\n**Labeling van content:**\n- Deepfakes en AI-gegenereerde audio/video moeten gelabeld worden\n- AI-gegenereerde tekst die lijkt op menselijke content moet herkenbaar zijn\n- Uitzondering: artistieke en satirische werken\n\n**Technische vereisten:**\n- Aanbieders moeten zorgen voor detecteerbaarheid van AI-output\n- Machineleesbare markering wordt aanbevolen\n\nDeze verplichtingen gelden vanaf augustus 2025.",
+      "metadata": {"priority": "medium", "source": "EU AI Act Art. 50"}
+    },
+    {
+      "id": "faq-015",
+      "category": "digitalisering",
+      "questions": [
+        "Wat is de Wet digitale overheid?",
+        "Wdo verplichtingen",
+        "Digitale toegankelijkheid overheid",
+        "DigiD inloggen verplicht?",
+        "Eenmalige gegevensuitvraag"
+      ],
+      "answer": "De Wet digitale overheid (Wdo) regelt de digitale dienstverlening van de overheid. Belangrijke verplichtingen:\n\n**Digitale toegang:**\n- Burgers en bedrijven moeten digitaal zaken kunnen doen\n- Erkende inlogmiddelen (DigiD, eHerkenning) zijn verplicht\n\n**Eenmalige uitvraag:**\n- Gegevens die al bij de overheid bekend zijn, mogen niet opnieuw worden gevraagd\n- Koppeling met basisregistraties\n\n**Digitale toegankelijkheid:**\n- Websites en apps moeten voldoen aan WCAG 2.1 niveau AA\n- Toegankelijkheidsverklaring is verplicht\n\n**Standaarden:**\n- Gebruik van open standaarden (Forum Standaardisatie 'pas toe of leg uit')",
+      "metadata": {"priority": "medium", "source": "Wet digitale overheid"}
+    },
+    {
+      "id": "faq-016",
+      "category": "ai_act",
+      "questions": [
+        "Wat is een AI-geletterdheid verplichting?",
+        "AI literacy",
+        "Moeten medewerkers AI-training krijgen?",
+        "AI kennis verplicht?",
+        "AI competenties personeel"
+      ],
+      "answer": "De AI Act bevat een AI-geletterdheidsverplichting (Art. 4):\n\n**Wat houdt het in:**\n- Aanbieders en gebruikers van AI-systemen moeten zorgen dat personeel voldoende AI-kennis heeft\n- Dit geldt voor iedereen die met AI-systemen werkt\n\n**Vereiste competenties:**\n- Begrip van de werking van het AI-systeem\n- Kennis van mogelijke risico's en beperkingen\n- Vermogen om output kritisch te beoordelen\n- Kennis van toepasselijke wet- en regelgeving\n\n**Implementatie:**\n- Training en opleiding programma's opzetten\n- Documenteren welke trainingen zijn gevolgd\n- Periodiek kennis actualiseren\n\nDeze verplichting geldt vanaf augustus 2025.",
+      "metadata": {"priority": "medium", "source": "EU AI Act Art. 4"}
+    },
+    {
+      "id": "faq-017",
+      "category": "inkoop",
+      "questions": [
+        "Wat zijn open standaarden?",
+        "Pas toe of leg uit",
+        "Forum Standaardisatie",
+        "Welke standaarden zijn verplicht?",
+        "Open standaarden overheid"
+      ],
+      "answer": "Open standaarden zijn technische afspraken die vrij beschikbaar en implementeerbaar zijn. Voor de overheid:\n\n**'Pas toe of leg uit' lijst:**\n- Bevat verplichte open standaarden voor de overheid\n- Bij afwijking moet dit gemotiveerd worden\n- Beheerd door Forum Standaardisatie\n\n**Voorbeelden verplichte standaarden:**\n- HTTPS en TLS voor veilige verbindingen\n- PDF/A voor archivering\n- OWMS voor metadata\n- Digikoppeling voor gegevensuitwisseling\n- WCAG voor toegankelijkheid\n\n**Voordelen:**\n- Geen vendor lock-in\n- Betere interoperabiliteit\n- Lagere kosten op lange termijn\n\nZie https://www.forumstandaardisatie.nl voor de actuele lijst.",
+      "metadata": {"priority": "medium", "source": "Forum Standaardisatie"}
+    },
+    {
+      "id": "faq-018",
+      "category": "avg",
+      "questions": [
+        "Wat zijn de rechten van betrokkenen?",
+        "AVG rechten burgers",
+        "Inzagerecht AVG",
+        "Recht op vergetelheid",
+        "Dataportabiliteit"
+      ],
+      "answer": "Betrokkenen hebben onder de AVG de volgende rechten:\n\n**1. Recht op informatie (Art. 13-14)**\n- Weten welke gegevens worden verwerkt en waarom\n\n**2. Recht op inzage (Art. 15)**\n- Kopie van eigen persoonsgegevens opvragen\n\n**3. Recht op rectificatie (Art. 16)**\n- Onjuiste gegevens laten corrigeren\n\n**4. Recht op vergetelheid (Art. 17)**\n- Gegevens laten verwijderen (met uitzonderingen)\n\n**5. Recht op beperking (Art. 18)**\n- Verwerking tijdelijk stopzetten\n\n**6. Recht op dataportabiliteit (Art. 20)**\n- Gegevens in overdraagbaar formaat ontvangen\n\n**7. Recht van bezwaar (Art. 21)**\n- Bezwaar maken tegen verwerking\n\nGemeenten moeten binnen 1 maand reageren op verzoeken.",
+      "metadata": {"priority": "high", "source": "AVG Art. 12-22"}
+    },
+    {
+      "id": "faq-019",
+      "category": "security",
+      "questions": [
+        "Wat is een pentest?",
+        "Penetratietest gemeente",
+        "Beveiligingstest website",
+        "Ethical hacking overheid",
+        "Kwetsbaarhedenonderzoek"
+      ],
+      "answer": "Een pentest (penetratietest) is een gecontroleerde aanval op uw IT-systemen om kwetsbaarheden te ontdekken:\n\n**Soorten pentests:**\n- **Black box**: Tester heeft geen voorkennis\n- **White box**: Tester heeft volledige informatie\n- **Grey box**: Tester heeft beperkte informatie\n\n**Wanneer uitvoeren:**\n- Voor livegang van nieuwe systemen\n- Na grote wijzigingen\n- Periodiek (minimaal jaarlijks voor kritieke systemen)\n- Bij vermoeden van kwetsbaarheden\n\n**BIO-vereisten:**\n- Kritieke systemen moeten getest worden\n- Resultaten documenteren en opvolgen\n- Rapportage aan CISO\n\n**Let op:**\n- Alleen door gecertificeerde partijen\n- Duidelijke scope en afspraken\n- Responsible disclosure beleid",
+      "metadata": {"priority": "medium", "source": "BIO"}
+    },
+    {
+      "id": "faq-020",
+      "category": "ai_act",
+      "questions": [
+        "Wat is menselijk toezicht bij AI?",
+        "Human oversight AI",
+        "Menselijke controle AI systemen",
+        "Human in the loop",
+        "AI beslissingen controleren"
+      ],
+      "answer": "Menselijk toezicht is een kernvereiste van de AI Act voor hoog-risico systemen:\n\n**Vereisten (Art. 14):**\n- AI-systemen moeten effectief door mensen kunnen worden gecontroleerd\n- Gebruikers moeten de output kunnen begrijpen en interpreteren\n- Mogelijkheid om AI-beslissingen te negeren of stoppen\n\n**Implementatie:**\n- **Human-in-the-loop**: Mens keurt elke beslissing goed\n- **Human-on-the-loop**: Mens monitort en kan ingrijpen\n- **Human-in-command**: Mens heeft volledige controle\n\n**Documentatie:**\n- Beschrijf hoe menselijk toezicht is georganiseerd\n- Train medewerkers in het interpreteren van AI-output\n- Leg escalatieprocedures vast\n\nDit voorkomt dat AI volledig autonoom impactvolle beslissingen neemt.",
+      "metadata": {"priority": "high", "source": "EU AI Act Art. 14"}
+    },
+    {
+      "id": "faq-021",
+      "category": "ai_implementatie",
+      "questions": [
+        "Welke stakeholders moet ik betrekken bij een AI implementatie?",
+        "Wie betrek ik bij AI project?",
+        "Stakeholders AI implementatie",
+        "Wie moet meedoen aan AI project?"
+      ],
+      "answer": "Bij een AI implementatie zijn de volgende stakeholders essentieel:\n\n**Intern:**\n- **Management/bestuur**: Voor draagvlak en besluitvorming\n- **IT-afdeling**: Technische implementatie en beheer\n- **Functionaris Gegevensbescherming (FG)**: Privacy en AVG compliance\n- **Juridische zaken**: Contracten en aansprakelijkheid\n- **HR**: Bij impact op medewerkers\n- **Eindgebruikers**: Voor requirements en acceptatie\n\n**Extern:**\n- **Leverancier**: Voor technische ondersteuning\n- **Burgers/belanghebbenden**: Bij impact op dienstverlening\n- **Ondernemingsraad**: Bij personele gevolgen\n\n**Tips:**\n- Betrek stakeholders vroeg in het proces\n- Organiseer regelmatige afstemming\n- Documenteer beslissingen en afspraken",
+      "metadata": {"priority": "high", "category": "ai_implementatie"}
+    },
+    {
+      "id": "faq-022",
+      "category": "ai_implementatie",
+      "questions": [
+        "Hoe zorg ik voor draagvlak in de organisatie?",
+        "Draagvlak creëren AI",
+        "Hoe krijg ik medewerkers mee?",
+        "Organisatie meekrijgen AI"
+      ],
+      "answer": "Draagvlak voor AI creëer je door:\n\n**Communicatie:**\n- Leg helder uit waarom AI wordt ingezet en wat de voordelen zijn\n- Wees transparant over wat AI wel en niet kan\n- Adresseer zorgen proactief (bijv. over banen)\n\n**Betrokkenheid:**\n- Betrek medewerkers vroeg bij de ontwikkeling\n- Laat eindgebruikers meedenken over requirements\n- Organiseer demo's en pilots\n\n**Training:**\n- Investeer in AI-geletterdheid (verplicht onder AI Act)\n- Bied hands-on training aan\n- Creëer ruimte voor vragen en feedback\n\n**Quick wins:**\n- Start met een use case die direct waarde oplevert\n- Deel successen breed in de organisatie\n- Vier mijlpalen samen",
+      "metadata": {"priority": "medium", "category": "ai_implementatie"}
+    },
+    {
+      "id": "faq-023",
+      "category": "ai_implementatie",
+      "questions": [
+        "Wat zijn de belangrijkste risico's die ik moet managen?",
+        "Risico's AI implementatie",
+        "Welke risico's moet ik managen?",
+        "AI project risicomanagement",
+        "Hoe manage ik risico's bij AI projecten?"
+      ],
+      "answer": "De belangrijkste risico's bij AI implementatie:\n\n**Technische risico's:**\n- Onvoldoende datakwaliteit\n- Bias in algoritmes\n- Integratieproblemen met bestaande systemen\n- Performance en schaalbaarheid\n\n**Organisatorische risico's:**\n- Gebrek aan draagvlak\n- Onvoldoende expertise\n- Weerstand van medewerkers\n- Onduidelijke verantwoordelijkheden\n\n**Compliance risico's:**\n- AVG/privacy schendingen\n- Niet voldoen aan AI Act\n- Ontbrekende documentatie\n- Onvoldoende transparantie\n\n**Mitigatie:**\n- Voer een risicoanalyse uit vooraf\n- Stel een DPIA op indien nodig\n- Plan voor menselijk toezicht\n- Documenteer beslissingen en keuzes",
+      "metadata": {"priority": "high", "category": "ai_implementatie"}
+    },
+    {
+      "id": "faq-024",
+      "category": "avg",
+      "questions": [
+        "Welke GDPR maatregelen zijn nodig voor een chatbot?",
+        "AVG maatregelen chatbot",
+        "Privacy chatbot gemeente",
+        "GDPR compliance chatbot"
+      ],
+      "answer": "Voor een chatbot zijn de volgende AVG-maatregelen nodig:\n\n**Vooraf:**\n- **DPIA uitvoeren** als de chatbot persoonsgegevens verwerkt\n- **Verwerkingsregister** bijwerken\n- **Privacyverklaring** opstellen/aanpassen\n\n**Technisch:**\n- **Dataminimalisatie**: Vraag alleen noodzakelijke gegevens\n- **Bewaartermijnen**: Verwijder gesprekken na vastgestelde periode\n- **Beveiliging**: Encryptie, toegangscontrole\n- **Logging**: Voor verantwoording en audits\n\n**Organisatorisch:**\n- **Verwerkersovereenkomst** met leverancier\n- **Training** voor beheerders\n- **Procedure** voor inzageverzoeken\n\n**Transparantie:**\n- Meld dat gebruiker met AI praat (AI Act verplichting)\n- Informeer over datagebruik\n- Bied opt-out mogelijkheid",
+      "metadata": {"priority": "high", "source": "AVG"}
+    },
+    {
+      "id": "faq-025",
+      "category": "ai_act",
+      "questions": [
+        "Hoe ga ik om met de AI Act verplichtingen?",
+        "AI Act compliance",
+        "Voldoen aan AI Act",
+        "AI Act implementeren gemeente"
+      ],
+      "answer": "Om aan de AI Act te voldoen:\n\n**Stap 1: Inventariseer**\n- Welke AI-systemen gebruikt uw organisatie?\n- In welke risicocategorie vallen deze?\n- Bent u aanbieder of gebruiker?\n\n**Stap 2: Classificeer**\n- Verboden AI → Niet gebruiken\n- Hoog-risico → Volledige compliance vereist\n- Beperkt risico → Transparantieverplichtingen\n- Minimaal risico → Vrijwillige gedragscodes\n\n**Stap 3: Implementeer**\n- Documenteer AI-systemen\n- Regel menselijk toezicht\n- Train personeel (AI-geletterdheid)\n- Registreer in EU-database (hoog-risico)\n\n**Tijdlijn:**\n- Feb 2025: Verboden praktijken\n- Aug 2025: Transparantie + AI-geletterdheid\n- Aug 2026: Hoog-risico volledig",
+      "metadata": {"priority": "high", "source": "EU AI Act"}
+    },
+    {
+      "id": "faq-026",
+      "category": "transparantie",
+      "questions": [
+        "Wat zijn best practices voor transparantie?",
+        "Transparantie AI gemeente",
+        "Hoe wees ik transparant over AI?",
+        "Uitlegbaarheid algoritmes"
+      ],
+      "answer": "Best practices voor AI-transparantie:\n\n**Naar burgers:**\n- Communiceer wanneer AI wordt gebruikt in besluitvorming\n- Leg uit hoe het algoritme werkt (in begrijpelijke taal)\n- Bied mogelijkheid voor menselijke herbeoordeling\n- Publiceer in het Algoritmeregister\n\n**Intern:**\n- Documenteer de werking en beperkingen\n- Leg vast welke data wordt gebruikt\n- Beschrijf hoe beslissingen tot stand komen\n- Train medewerkers in uitleg geven\n\n**Technisch:**\n- Implementeer logging van beslissingen\n- Zorg voor uitlegbare modellen waar mogelijk\n- Bouw audit trails in\n\n**Wettelijk vereist:**\n- AI Act: Melden dat men met AI communiceert\n- AVG: Informeren over geautomatiseerde besluitvorming\n- Algoritmeregister: Publiceren impactvolle algoritmes",
+      "metadata": {"priority": "medium", "category": "transparantie"}
+    },
+    {
+      "id": "faq-027",
+      "category": "architectuur",
+      "questions": [
+        "Welke architectuur principes moet ik volgen?",
+        "Welke architectuur moet ik kiezen?",
+        "IT architectuur gemeente",
+        "Architectuur principes overheid"
+      ],
+      "answer": "Voor gemeentelijke IT-architectuur gelden deze principes:\n\n**NORA (Nederlandse Overheid Referentie Architectuur):**\n- Basisprincipes voor overheidsarchitectuur\n- Interoperabiliteit en hergebruik\n- Gelaagde architectuur\n\n**GEMMA (Gemeentelijke Model Architectuur):**\n- Specifiek voor gemeenten\n- Procesgericht werken\n- Zaakgericht werken\n\n**Common Ground:**\n- Scheiding data en applicaties\n- Eenmalige opslag, meervoudig gebruik\n- API-gebaseerde ontsluiting\n\n**Belangrijke principes:**\n- **Open standaarden**: Pas toe of leg uit\n- **Geen vendor lock-in**: Kies voor open en uitwisselbaar\n- **Security by design**: Beveiliging vanaf het begin\n- **Privacy by design**: Privacy ingebouwd",
+      "metadata": {"priority": "medium", "source": "NORA/GEMMA"}
+    },
+    {
+      "id": "faq-028",
+      "category": "inkoop",
+      "questions": [
+        "Hoe voorkom ik vendor lock-in?",
+        "Vendor lock-in voorkomen",
+        "Afhankelijkheid leverancier voorkomen",
+        "Uitstapbaarheid IT"
+      ],
+      "answer": "Vendor lock-in voorkom je door:\n\n**Bij inkoop:**\n- Eis open standaarden en open formaten\n- Vraag om data-export mogelijkheden\n- Neem exit-clausules op in contract (GIBIT)\n- Vraag naar escrow-regeling voor broncode\n\n**Technisch:**\n- Kies voor API-gebaseerde integraties\n- Vermijd propriëtaire dataformaten\n- Documenteer integraties en koppelingen\n- Test regelmatig data-export\n\n**Contractueel (GIBIT bepalingen):**\n- Eigendom van data blijft bij gemeente\n- Transitieondersteuning bij exit\n- Medewerking aan datamigratie\n- Redelijke exit-kosten\n\n**Organisatorisch:**\n- Behoud kennis intern\n- Documenteer configuraties\n- Plan periodieke leveranciersevaluatie",
+      "metadata": {"priority": "medium", "source": "GIBIT"}
+    },
+    {
+      "id": "faq-029",
+      "category": "security",
+      "questions": [
+        "Welke security maatregelen zijn essentieel?",
+        "Wat zijn security requirements?",
+        "Beveiligingsmaatregelen gemeente",
+        "Security eisen IT"
+      ],
+      "answer": "Essentiële security maatregelen (conform BIO):\n\n**Toegangsbeveiliging:**\n- Multi-factor authenticatie (MFA)\n- Rolgebaseerde toegang (RBAC)\n- Regelmatige review van rechten\n- Wachtwoordbeleid\n\n**Netwerkbeveiliging:**\n- Firewall en segmentatie\n- VPN voor remote access\n- Intrusion detection/prevention\n- DDoS bescherming\n\n**Databeveiliging:**\n- Encryptie in transit (TLS) en at rest\n- Back-up en recovery\n- Data classificatie\n- Secure disposal\n\n**Monitoring:**\n- Logging en SIEM\n- Vulnerability scanning\n- Penetratietesten\n- Incident response plan\n\n**Organisatorisch:**\n- Security awareness training\n- Responsible disclosure beleid\n- Leveranciersbeoordelingen",
+      "metadata": {"priority": "high", "source": "BIO"}
+    },
+    {
+      "id": "faq-030",
+      "category": "ai_implementatie",
+      "questions": [
+        "Hoe plan ik een AI implementatie stap voor stap?",
+        "Hoe plan ik een AI implementatie?",
+        "AI implementatie stappenplan",
+        "Fasen AI project"
+      ],
+      "answer": "Stappenplan voor AI implementatie:\n\n**Fase 1: Voorbereiding**\n- Definieer de business case\n- Identificeer stakeholders\n- Voer haalbaarheidsonderzoek uit\n- Stel projectteam samen\n\n**Fase 2: Analyse**\n- Breng datalandschap in kaart\n- Analyseer juridische kaders (AVG, AI Act)\n- Voer DPIA uit indien nodig\n- Definieer requirements\n\n**Fase 3: Selectie & Ontwerp**\n- Kies oplossing (build/buy)\n- Ontwerp architectuur\n- Plan integraties\n- Stel testplan op\n\n**Fase 4: Implementatie**\n- Ontwikkel/configureer\n- Test uitgebreid (incl. bias)\n- Train gebruikers\n- Pilot met beperkte groep\n\n**Fase 5: Livegang & Beheer**\n- Gefaseerde uitrol\n- Monitor performance\n- Verzamel feedback\n- Continu verbeteren",
+      "metadata": {"priority": "high", "category": "ai_implementatie"}
+    },
+    {
+      "id": "faq-031",
+      "category": "ai_implementatie",
+      "questions": [
+        "Welke success metrics moet ik definiëren?",
+        "KPIs AI project",
+        "Hoe meet ik succes?",
+        "Success metrics AI"
+      ],
+      "answer": "Belangrijke metrics voor AI projecten:\n\n**Technische metrics:**\n- Nauwkeurigheid/accuracy van het model\n- Response tijd\n- Uptime/beschikbaarheid\n- Foutpercentage\n\n**Business metrics:**\n- Tijdsbesparing medewerkers\n- Kostenbesparing\n- Klanttevredenheid (NPS, CSAT)\n- Aantal afgehandelde zaken\n\n**Compliance metrics:**\n- Aantal privacy incidenten\n- Audit resultaten\n- Klachten van burgers\n- Correctheid van beslissingen\n\n**Adoptie metrics:**\n- Gebruikersadoptie percentage\n- Aantal actieve gebruikers\n- Training completion rate\n- Gebruikerstevredenheid\n\n**Tips:**\n- Meet een baseline vóór implementatie\n- Definieer targets vooraf\n- Rapporteer regelmatig aan stakeholders\n- Pas bij op basis van resultaten",
+      "metadata": {"priority": "medium", "category": "ai_implementatie"}
+    },
+    {
+      "id": "faq-032",
+      "category": "digitalisering",
+      "questions": [
+        "Welke open standaarden moet ik gebruiken?",
+        "Welke standaarden moet ik volgen?",
+        "Welke digitale standaarden moet ik volgen?",
+        "Open standaarden gemeente"
+      ],
+      "answer": "Verplichte open standaarden voor gemeenten (Forum Standaardisatie):\n\n**Communicatie & Uitwisseling:**\n- **Digikoppeling**: Voor gegevensuitwisseling tussen overheden\n- **StUF**: Standaard Uitwisseling Formaat\n- **API Design Rules**: Voor REST APIs\n\n**Documenten:**\n- **PDF/A**: Voor archivering\n- **ODF**: Voor bewerkbare documenten\n- **OWMS**: Overheid Web Metadata Standaard\n\n**Beveiliging:**\n- **HTTPS/TLS**: Voor veilige verbindingen\n- **DNSSEC**: Voor veilige domeinnamen\n- **STARTTLS + DANE**: Voor e-mail\n\n**Toegankelijkheid:**\n- **WCAG 2.1**: Web Content Accessibility Guidelines\n\n**Identiteit:**\n- **SAML/OpenID Connect**: Voor authenticatie\n- **DigiD/eHerkenning**: Voor burgers/bedrijven\n\nZie https://www.forumstandaardisatie.nl voor de volledige lijst.",
+      "metadata": {"priority": "high", "source": "Forum Standaardisatie"}
+    },
+    {
+      "id": "faq-033",
+      "category": "digitalisering",
+      "questions": [
+        "Hoe implementeer ik Common Ground principes?",
+        "Hoe implementeer ik Common Ground?",
+        "Common Ground gemeente",
+        "Wat is Common Ground?"
+      ],
+      "answer": "Common Ground implementeren:\n\n**Wat is Common Ground?**\nEen nieuwe informatiekundige visie voor gemeenten gebaseerd op:\n- Scheiding van data en applicaties\n- Eenmalige opslag bij de bron\n- Meervoudig gebruik via APIs\n\n**Implementatiestappen:**\n\n**1. Start klein:**\n- Kies één proces of domein\n- Begin met loskoppelen van data\n- Experimenteer met API-koppelingen\n\n**2. Gebruik beschikbare componenten:**\n- Haven (Kubernetes platform)\n- NLX (Transactie-logging)\n- Zaakregistratiecomponenten\n\n**3. Werk samen:**\n- Sluit aan bij de Common Ground community\n- Deel en hergebruik componenten\n- Leer van andere gemeenten\n\n**Resources:**\n- https://commonground.nl\n- VNG Realisatie\n- Dimpact, Conxillium (samenwerkingen)",
+      "metadata": {"priority": "medium", "source": "VNG/Common Ground"}
+    },
+    {
+      "id": "faq-034",
+      "category": "digitalisering",
+      "questions": [
+        "Welke APIs zijn beschikbaar voor gemeentes?",
+        "Welke APIs kan ik gebruiken?",
+        "Gemeente APIs",
+        "Overheid APIs"
+      ],
+      "answer": "Beschikbare APIs voor gemeenten:\n\n**Basisregistraties:**\n- **Haal Centraal BRP**: Basisregistratie Personen\n- **BAG API**: Basisregistratie Adressen en Gebouwen\n- **BRK API**: Basisregistratie Kadaster\n- **HR API**: Handelsregister (KVK)\n\n**Gemeentelijke APIs:**\n- **Zaakgericht werken APIs**: OpenZaak\n- **Klantinteractie APIs**: OpenKlant\n- **Producten & Diensten**: PDC API\n\n**Landelijke voorzieningen:**\n- **DigiD**: Authenticatie burgers\n- **eHerkenning**: Authenticatie bedrijven\n- **MijnOverheid**: Berichtenbox\n- **iWmo/iJw**: Wmo/Jeugdwet\n\n**Waar te vinden:**\n- https://developer.overheid.nl (API overzicht)\n- https://haalcentraal.nl (Basisregistraties)\n- https://vng-realisatie.github.io (VNG APIs)",
+      "metadata": {"priority": "medium", "source": "developer.overheid.nl"}
+    },
+    {
+      "id": "faq-035",
+      "category": "juridisch",
+      "questions": [
+        "Wat zijn de belangrijkste juridische aandachtspunten?",
+        "Juridische aspecten AI",
+        "Welke regelgeving is van toepassing?",
+        "Juridisch kader digitalisering"
+      ],
+      "answer": "Belangrijkste juridische kaders voor gemeentelijke digitalisering:\n\n**Privacy:**\n- **AVG/GDPR**: Bescherming persoonsgegevens\n- **UAVG**: Uitvoeringswet AVG (NL-specifiek)\n\n**AI-specifiek:**\n- **AI Act**: EU-verordening voor AI-systemen\n- **Algoritmeregister**: Transparantieplicht\n\n**Digitale overheid:**\n- **Wet digitale overheid (Wdo)**: Digitale toegang\n- **Archiefwet**: Bewaring overheidsinformatie\n- **Woo**: Wet open overheid\n\n**Inkoop:**\n- **Aanbestedingswet**: Verplichte procedures\n- **GIBIT**: Inkoopvoorwaarden IT\n\n**Aandachtspunten:**\n- Voer altijd een juridische toets uit\n- Betrek de FG bij privacy-vraagstukken\n- Documenteer beslissingen\n- Houd wetgeving bij (verandert snel)",
+      "metadata": {"priority": "high", "category": "juridisch"}
+    },
+    {
+      "id": "faq-036",
+      "category": "digitalisering",
+      "questions": [
+        "Hoe begin ik met digitale transformatie?",
+        "Waar moet ik beginnen?",
+        "Digitale transformatie starten",
+        "Eerste stappen digitalisering"
+      ],
+      "answer": "Digitale transformatie starten:\n\n**Stap 1: Visie & Strategie**\n- Bepaal waar je naartoe wilt\n- Sluit aan bij gemeentelijke doelen\n- Krijg commitment van bestuur\n\n**Stap 2: Inventariseer huidige situatie**\n- Welke systemen zijn er?\n- Waar zitten de knelpunten?\n- Wat is de digitale volwassenheid?\n\n**Stap 3: Prioriteer**\n- Kies impactvolle quick wins\n- Balanceer ambitie en haalbaarheid\n- Focus op burgerwaarde\n\n**Stap 4: Start klein**\n- Begin met een pilot\n- Leer en pas aan\n- Schaal op wat werkt\n\n**Resources:**\n- VNG Digitale Agenda\n- KING/VNG ondersteuning\n- Leer van andere gemeenten\n\n**Tip:** Digitale transformatie is geen IT-project maar een organisatieverandering.",
+      "metadata": {"priority": "high", "category": "digitalisering"}
+    },
+    {
+      "id": "faq-037",
+      "category": "algemeen",
+      "questions": [
+        "Welke best practices moet ik kennen?",
+        "Wat zijn best practices?",
+        "Best practices digitalisering gemeente",
+        "Wat zijn de beste governance practices?"
+      ],
+      "answer": "Best practices voor gemeentelijke digitalisering:\n\n**Governance:**\n- Stel een duidelijke governance structuur in\n- Definieer rollen en verantwoordelijkheden\n- Richt een stuurgroep in voor grote projecten\n- Rapporteer regelmatig aan bestuur\n\n**Projectmanagement:**\n- Werk agile/iteratief waar mogelijk\n- Betrek eindgebruikers vroeg en vaak\n- Plan voor verandermanagement\n- Documenteer lessons learned\n\n**Technisch:**\n- Volg open standaarden\n- Bouw modulair en herbruikbaar\n- Investeer in security en privacy by design\n- Test grondig (inclusief accessibility)\n\n**Organisatorisch:**\n- Investeer in digitale vaardigheden\n- Creëer een cultuur van innovatie\n- Werk samen met andere gemeenten\n- Deel kennis en componenten",
+      "metadata": {"priority": "medium", "category": "algemeen"}
+    },
+    {
+      "id": "faq-038",
+      "category": "avg",
+      "questions": [
+        "Hoe check ik compliance?",
+        "AVG compliance check",
+        "Compliance controleren",
+        "Voldoe ik aan de wet?"
+      ],
+      "answer": "Compliance checken doe je zo:\n\n**AVG compliance:**\n- [ ] Verwerkingsregister bijgewerkt?\n- [ ] DPIA uitgevoerd waar nodig?\n- [ ] Verwerkersovereenkomsten afgesloten?\n- [ ] Privacyverklaring actueel?\n- [ ] Procedures voor rechten betrokkenen?\n- [ ] FG aangesteld en gemeld bij AP?\n\n**AI Act compliance:**\n- [ ] AI-systemen geïnventariseerd?\n- [ ] Risicocategorieën bepaald?\n- [ ] Menselijk toezicht geregeld?\n- [ ] Documentatie op orde?\n- [ ] AI-geletterdheid personeel?\n\n**BIO compliance:**\n- [ ] Gap-analyse uitgevoerd?\n- [ ] Maatregelen geïmplementeerd?\n- [ ] ENSIA verantwoording gedaan?\n\n**Tips:**\n- Plan periodieke reviews\n- Gebruik self-assessments\n- Schakel externe auditor in\n- Documenteer alles",
+      "metadata": {"priority": "high", "category": "compliance"}
+    },
+    {
+      "id": "faq-039",
+      "category": "algemeen",
+      "questions": [
+        "Algemene informatie over digitalisering",
+        "Informatie digitale transformatie",
+        "Overzicht digitalisering gemeente"
+      ],
+      "answer": "Digitalisering bij gemeenten omvat:\n\n**Belangrijke thema's:**\n- **Dienstverlening**: Online diensten voor burgers en bedrijven\n- **Zaakgericht werken**: Processen stroomlijnen\n- **Data & AI**: Datagedreven werken en AI-toepassingen\n- **Common Ground**: Nieuwe informatiekundige visie\n\n**Kaders:**\n- Wet digitale overheid (Wdo)\n- AVG/GDPR voor privacy\n- AI Act voor AI-systemen\n- BIO voor informatiebeveiliging\n\n**Ondersteuning:**\n- VNG Realisatie voor gemeenten\n- KING voor informatiemanagement\n- Forum Standaardisatie voor standaarden\n\n**Waar beginnen:**\n1. Sluit aan bij VNG Digitale Agenda\n2. Inventariseer huidige situatie\n3. Kies een startpunt\n4. Werk samen met andere gemeenten\n\nStel gerust een specifiekere vraag!",
+      "metadata": {"priority": "medium", "category": "algemeen"}
+    },
+    {
+      "id": "faq-040",
+      "category": "algemeen",
+      "questions": [
+        "Wie kan me verder helpen?",
+        "Waar vind ik hulp?",
+        "Ondersteuning digitalisering",
+        "Hulp bij digitale transformatie"
+      ],
+      "answer": "Hulp en ondersteuning vind je bij:\n\n**VNG en partners:**\n- **VNG Realisatie**: Ondersteuning digitalisering gemeenten\n- **KING**: Kwaliteitsinstituut Nederlandse Gemeenten\n- **Informatiebeveiligingsdienst (IBD)**: Security ondersteuning\n\n**Landelijke organisaties:**\n- **Forum Standaardisatie**: Open standaarden\n- **Logius**: DigiD, MijnOverheid\n- **Autoriteit Persoonsgegevens**: Privacy vragen\n\n**Kennisnetwerken:**\n- Gemeentelijke werkgroepen en communities\n- Common Ground community\n- Leveranciersnetwerken (Dimpact, etc.)\n\n**Advies:**\n- FG voor privacy vraagstukken\n- CISO voor security vraagstukken\n- Enterprise architect voor architectuur\n\n**Online:**\n- https://vng.nl/digitaleoverheid\n- https://commonground.nl\n- https://developer.overheid.nl",
+      "metadata": {"priority": "medium", "category": "algemeen"}
+    }
+  ]
+}

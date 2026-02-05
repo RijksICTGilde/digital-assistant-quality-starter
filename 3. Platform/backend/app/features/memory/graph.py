@@ -539,11 +539,22 @@ def _format_response(state: ChatState) -> dict:
 # Graph builder
 # ---------------------------------------------------------------------------
 
-def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionStore):
+def build_chat_graph(
+    llm: ChatOpenAI,
+    enhanced_rag: Any,
+    session_store: SessionStore,
+    faq_service: Any = None,
+):
     """Assemble and compile the LangGraph chat graph.
 
-    Dependencies (llm, enhanced_rag, session_store) are captured via closures
-    in the node factory functions.
+    Dependencies (llm, enhanced_rag, session_store, faq_service) are captured
+    via closures in the node factory functions.
+
+    Args:
+        llm: The ChatOpenAI instance for LLM calls
+        enhanced_rag: The EnhancedRAGSystem for knowledge retrieval
+        session_store: The SessionStore for session persistence
+        faq_service: Optional FAQService for FAQ matching (skips LLM for exact matches)
     """
     # Mutable containers shared between tools and graph nodes
     _state_ref: Dict[str, Any] = {}
@@ -559,7 +570,7 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
     load_session = _make_load_session(session_store)
     guardrail_input = make_guardrail_input_node()
     triage_relevance = make_triage_relevance_node()
-    triage_faq = make_triage_faq_node()
+    triage_faq = make_triage_faq_node(faq_service=faq_service)
     triage_intent = make_triage_intent_node()
     call_llm = _make_call_llm(llm_with_tools)
     execute_tools = make_execute_tools_node(tools, _captured_sources)

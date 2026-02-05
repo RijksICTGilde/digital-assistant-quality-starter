@@ -182,28 +182,24 @@ def make_triage_relevance_node():
 # Triage node 2: FAQ / known-answer lookup
 # ---------------------------------------------------------------------------
 
-def make_triage_faq_node():
+def make_triage_faq_node(faq_service=None):
     """Factory: checks whether the question matches a known FAQ entry.
 
-    ── When to short-circuit ─────────────────────────────────────
-        • Exact or fuzzy match against a FAQ database
-        • The answer is static and doesn't need LLM generation
+    Uses semantic matching with FAISS to find FAQ entries that match
+    the user's question.
 
-    ── Example implementation ideas ──────────────────────────────
-        • Embedding similarity against a small FAQ index
-        • BM25 / keyword search over FAQ entries
-        • Simple dict lookup on normalised question text
-        • Database query on a FAQ table
+    ── Matching thresholds ───────────────────────────────────────
+        • Score >= 0.85: Direct FAQ answer (skip LLM)
+        • Score 0.70-0.85: FAQ as suggestion for LLM
+        • Score < 0.70: No match, normal LLM processing
 
-    ── Current placeholder ───────────────────────────────────────
-        Always passes through. Replace the body with your logic.
+    ── State contract ────────────────────────────────────────────
+        Reads:   message, triage
+        Writes:  triage  (sets skip_llm + early_response when exact match)
+
+    Args:
+        faq_service: Optional FAQService instance. If None, node passes through.
     """
-
-    # Example FAQ database — replace with your own data source
-    # FAQ_DB: Dict[str, str] = {
-    #     "wat zijn de openingstijden": "Het gemeentehuis is open van ...",
-    #     "hoe vraag ik een paspoort aan": "U kunt een paspoort aanvragen ...",
-    # }
 
     async def triage_faq(state: dict) -> dict:
         if _triage_already_decided(state):
@@ -212,19 +208,66 @@ def make_triage_faq_node():
         triage = dict(state.get("triage") or _default_triage())
         message = state.get("message", "")
 
-        # ── PLACEHOLDER: replace with your FAQ lookup ───────────────
-        #
-        # Example: simple exact match
-        #
-        # normalised = message.strip().lower().rstrip("?.")
-        # if normalised in FAQ_DB:
-        #     triage["route"] = "faq"
-        #     triage["skip_llm"] = True
-        #     triage["early_response"] = FAQ_DB[normalised]
-        #     triage["triage_log"].append("triage_faq: FAQ HIT → skip")
-        #     logger.info("[TRIAGE-FAQ] FAQ match found, skipping LLM")
-        #     return {"triage": triage}
+        # If no FAQ service is configured, pass through
+        if faq_service is None:
+            triage["triage_log"].append("triage_faq: NO SERVICE")
+            logger.debug("[TRIAGE-FAQ] No FAQ service configured, passing through")
+            return {"triage": triage}
 
+        # Get best FAQ match
+        match, decision = faq_service.get_best_match(message)
+
+        if decision == "exact":
+            # High confidence match: return FAQ answer directly, skip LLM
+            triage["route"] = "faq"
+            triage["skip_llm"] = True
+
+            # Build response with answer and related questions
+            response_parts = [match.answer]
+
+            # Add related questions as examples
+            if match.related_questions:
+                examples = "\n".join(f"- {q}" for q in match.related_questions[:4])
+                response_parts.append(
+                    f"\n\n---\n**Gerelateerde vragen die ik kan beantwoorden:**\n{examples}"
+                )
+
+            triage["early_response"] = "\n".join(response_parts)
+            triage["faq_match"] = {
+                "faq_id": match.faq_id,
+                "category": match.category,
+                "score": match.score,
+            }
+            # Include pre-defined sources for this FAQ
+            triage["faq_sources"] = match.sources or []
+            triage["triage_log"].append(
+                f"triage_faq: EXACT MATCH ({match.faq_id}, score={match.score:.3f}) → skip"
+            )
+            logger.info(
+                f"[TRIAGE-FAQ] Exact FAQ match: {match.faq_id} "
+                f"(score={match.score:.3f}, sources={len(match.sources or [])}), skipping LLM"
+            )
+            return {"triage": triage}
+
+        if decision == "suggest":
+            # Medium confidence: pass suggestion to LLM for consideration
+            triage["faq_suggestion"] = {
+                "faq_id": match.faq_id,
+                "category": match.category,
+                "matched_question": match.matched_question,
+                "suggested_answer": match.answer,
+                "score": match.score,
+            }
+            triage["triage_log"].append(
+                f"triage_faq: SUGGEST ({match.faq_id}, score={match.score:.3f})"
+            )
+            logger.info(
+                f"[TRIAGE-FAQ] FAQ suggestion: {match.faq_id} "
+                f"(score={match.score:.3f}), continuing to LLM"
+            )
+            return {"triage": triage}
+
+        # No match or low confidence
         triage["triage_log"].append("triage_faq: NO MATCH")
         logger.info("[TRIAGE-FAQ] No FAQ match")
         return {"triage": triage}
@@ -301,15 +344,30 @@ def _bundle_triage_response(state: dict) -> dict:
     early_response = triage.get("early_response", "")
     exchange_id = f"ex-{uuid.uuid4().hex[:8]}"
 
+    # Include FAQ sources if available (for FAQ route)
+    faq_sources = triage.get("faq_sources", [])
+    unique_sources = [
+        {
+            "title": src.get("title", ""),
+            "url": src.get("url", ""),
+            "section_title": src.get("section_title", ""),
+            "snippet": src.get("snippet", ""),
+            "relevance_score": src.get("relevance_score", 0.9),
+            "document_id": f"faq-src-{i}",
+        }
+        for i, src in enumerate(faq_sources)
+    ]
+    source_ids = [src["document_id"] for src in unique_sources]
+
     logger.info(
         f"[TRIAGE] Early response ({triage.get('route', '?')}): "
-        f"{len(early_response)} chars"
+        f"{len(early_response)} chars, sources={len(unique_sources)}"
     )
     return {
         "assistant_text": early_response,
         "exchange_id": exchange_id,
-        "unique_sources": [],
-        "source_ids": [],
+        "unique_sources": unique_sources,
+        "source_ids": source_ids,
     }
 
 

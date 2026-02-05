@@ -19,6 +19,7 @@ class MemoryService:
         self,
         enhanced_rag: Any,
         session_store: Optional[SessionStore] = None,
+        faq_service: Any = None,
     ):
         api_key = os.getenv("GREENPT_API_KEY")
         base_url = os.getenv("GREENPT_BASE_URL") or None
@@ -33,8 +34,17 @@ class MemoryService:
         )
         self.enhanced_rag = enhanced_rag
         self.session_store = session_store or SessionStore()
-        self.graph = build_chat_graph(self.llm, self.enhanced_rag, self.session_store)
-        logger.info(f"MemoryService initialised (model={model}, base_url={base_url})")
+        self.faq_service = faq_service
+        self.graph = build_chat_graph(
+            self.llm,
+            self.enhanced_rag,
+            self.session_store,
+            faq_service=self.faq_service,
+        )
+        logger.info(
+            f"MemoryService initialised (model={model}, base_url={base_url}, "
+            f"faq_service={'enabled' if faq_service else 'disabled'})"
+        )
 
     async def chat(
         self,

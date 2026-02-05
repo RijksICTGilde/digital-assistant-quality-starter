@@ -1,0 +1,13 @@
+# Cache directories
+cache/
+
+# Maven
+target/*
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Logs
+*.log

@@ -53,7 +53,7 @@ class QualityAssuranceAgent(
 
         val allSources = (sources + roleSources).distinctBy { it.documentId ?: it.title }
 
-        val result = RagContext(
+        return RagContext(
             formattedContext = formattedContext,
             sourceReferences = sourceRefs,
             knowledgeSources = allSources,

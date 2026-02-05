@@ -709,10 +709,19 @@ const InfoPages = ({ selectedChoice, selectedOrganization, onChatbotAccess, onBa
             <ArrowLeft className="w-4 h-4" />
             <span>Terug</span>
           </button>
-          
+
           <div className="text-sm text-chatbot-neutral-500">
             Stap 3 van 3 • {Math.round(progressPercentage)}% voltooid
           </div>
+
+          <button
+            onClick={onChatbotAccess}
+            className="btn-primary flex items-center space-x-2"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>Start Chatbot</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
         </div>
       </div>

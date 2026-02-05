@@ -196,6 +196,10 @@ Stel gerust je vraag - ik kletsmaai er graag over! 🍪`,
         complianceChecks: response.compliance_checks,
         followUpSuggestions: response.follow_up_suggestions,
         processingTime: response.processing_time_ms,
+        qualityScores: response.quality_scores || null,
+        qualityTrace: response.quality_trace || null,
+        qualityImproved: response.quality_improved || false,
+        qualityExplanation: response.quality_explanation || null,
         enhanced: true
       }
 
@@ -350,6 +354,51 @@ Ik kon je vraag niet verwerken. Dit kan komen door:
                   {/* Message metadata for AI responses */}
                   {message.type === 'ai' && !message.error && (
                     <div className="mt-2 pt-2 border-t border-chatbot-neutral-200">
+                      {/* Quality Scores Panel */}
+                      {message.qualityScores && (
+                        <div className="mb-3 p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-semibold text-emerald-800 flex items-center">
+                              <Shield className="w-3 h-3 mr-1" />
+                              Kwaliteitscontrole
+                              {message.qualityImproved && (
+                                <span className="ml-1 px-1.5 py-0.5 bg-amber-100 text-amber-700 text-[10px] rounded-full">
+                                  Verbeterd
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {Object.entries(message.qualityScores).map(([dim, score]) => {
+                              const labels = {
+                                relevance: 'Relevantie',
+                                tone: 'Toon',
+                                completeness: 'Volledigheid',
+                                policy_compliance: 'Beleid'
+                              }
+                              const pct = Math.round(score * 100)
+                              const color = pct >= 80 ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                              return (
+                                <div key={dim} className="space-y-0.5">
+                                  <div className="flex justify-between text-[10px]">
+                                    <span className="text-emerald-700">{labels[dim] || dim}</span>
+                                    <span className="font-medium text-emerald-800">{pct}%</span>
+                                  </div>
+                                  <div className="h-1 bg-emerald-100 rounded-full overflow-hidden">
+                                    <div className={`h-full ${color} rounded-full`} style={{width: `${pct}%`}} />
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                          {message.qualityExplanation && (
+                            <p className="text-[10px] text-emerald-600 mt-2 italic">
+                              {message.qualityExplanation}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between text-xs text-chatbot-neutral-500">
                         {message.responseType && (
                           <span>{formatResponseType(message.responseType)}</span>

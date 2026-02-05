@@ -1,0 +1,52 @@
+server:
+  port: 8080
+
+spring:
+  ai:
+    openai:
+      api-key: ${GREENPT_API_KEY}
+      base-url: https://api.greenpt.ai
+      chat:
+        options:
+          model: llama-3.3-70b-instruct
+          temperature: 0.3
+          max-tokens: 2000
+      embedding:
+        options:
+          model: green-embedding
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+
+logging:
+  level:
+    org.springframework.ai.openai: DEBUG
+    org.springframework.web.client: DEBUG
+
+# Embabel agent configuration (uses GreenPT as OpenAI-compatible provider)
+embabel:
+  models:
+    default-llm: llama-3.3-70b-instruct
+    default-embedding-model: green-embedding
+  agent:
+    platform:
+      models:
+        openai:
+          api-key: ${GREENPT_API_KEY}
+          base-url: https://api.greenpt.ai
+
+# Quality agent thresholds (tunable)
+quality:
+  thresholds:
+    relevance: 0.6
+    tone: 0.7
+    completeness: 0.5
+    policy-compliance: 0.6
+  max-improvement-rounds: 1
+
+# RAG configuration
+rag:
+  documents-path: ${DOCUMENTS_PATH:../../1. Datasets/Scrapen/scraped_content/content}
+  cache-path: ${CACHE_PATH:./cache/vector-store.json}
+  chunk-size: 800
+  chunk-overlap: 100

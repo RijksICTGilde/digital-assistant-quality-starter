@@ -31,9 +31,10 @@ class EnhancedOpenAIService:
                 logger.info("Running in DEMO MODE - using mock responses")
                 api_key = "demo-key-for-demo-mode"  # Dummy key voor demo
         
-        self.client = AsyncOpenAI(api_key=api_key)
+        base_url = os.getenv("GREENPT_BASE_URL", "https://api.greenpt.ai/v1/")
+        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self.demo_mode = demo_mode
-        self.model = os.getenv("GREENPT_MODEL", "gpt-4o-2024-08-06")  # Updated voor structured outputs
+        self.model = os.getenv("GREENPT_MODEL", "green-l")
         self.max_tokens = int(os.getenv("GREENPT_MAX_TOKENS", "2000"))
         self.temperature = float(os.getenv("GREENPT_TEMPERATURE", "0.3"))  # Lower voor consistentie
         
@@ -230,7 +231,8 @@ Voeg GEEN bronverwijzingen, vervolgvragen of escalatie-informatie toe - deze wor
             # Voor demo doeleinden: gebruik mock structured response
             # In productie: gebruik echte GreenPT structured outputs API
             use_demo_mode = os.getenv("DEMO_MODE", "false").lower() == "true"
-            
+            completion = None
+
             if use_demo_mode or os.getenv("GREENPT_API_KEY", "").startswith("demo"):
                 # Demo structured response
                 logger.info("Using demo structured response")
@@ -261,8 +263,7 @@ Voor StructuredAIResponse: Geef uitgebreide, gestructureerde antwoorden met conc
                     completion = await self.client.chat.completions.create(
                         model=self.model,
                         messages=[
-                            {"role": "system", "content": enhanced_prompt},
-                            {"role": "user", "content": chat_message.message}
+                            {"role": "user", "content": enhanced_prompt + "\n\nGEBRUIKERSVRAAG:\n" + chat_message.message}
                         ],
                         max_tokens=self.max_tokens,
                         temperature=self.temperature
@@ -289,7 +290,7 @@ Voor StructuredAIResponse: Geef uitgebreide, gestructureerde antwoorden met conc
                 
                 # Add processing metadata
                 structured_response.processing_time_ms = int((time.time() - start_time) * 1000)
-                structured_response.token_usage = completion.usage.total_tokens if completion.usage else None
+                structured_response.token_usage = completion.usage.total_tokens if completion and completion.usage else None
                 
                 # Set confidence en complexity
                 structured_response.confidence_level = confidence
@@ -341,8 +342,7 @@ Geen JSON, alleen de vragen zelf.
             completion = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "Je bent een expert die logische vervolgvragen genereert die een gebruiker zou kunnen stellen na het ontvangen van een antwoord. Bedenk wat de gebruiker als volgende zou willen weten. Geef alleen de vragen terug, geen extra tekst."},
-                    {"role": "user", "content": follow_up_prompt}
+                    {"role": "user", "content": "Je bent een expert die logische vervolgvragen genereert die een gebruiker zou kunnen stellen na het ontvangen van een antwoord. Bedenk wat de gebruiker als volgende zou willen weten. Geef alleen de vragen terug, geen extra tekst.\n\n" + follow_up_prompt}
                 ],
                 max_tokens=200,
                 temperature=0.7

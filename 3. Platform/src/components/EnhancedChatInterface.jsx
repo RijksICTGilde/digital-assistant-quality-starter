@@ -236,7 +236,11 @@ Er ging iets mis met de API verbinding. Dit is een fallback response.
         complianceChecks: complianceChecks,
         followUpSuggestions: response.follow_up_suggestions || [],
         needsHumanHelp: response.needs_human_expert || response.needs_human_help || false,
-        processingTime: response.processing_time_ms || response.responseTime
+        processingTime: response.processing_time_ms || response.responseTime,
+        qualityScores: response.quality_scores || null,
+        qualityTrace: response.quality_trace || null,
+        qualityImproved: response.quality_improved || false,
+        qualityExplanation: response.quality_explanation || null
       }
 
       setMessages(prev => [...prev, aiMessage])
@@ -384,6 +388,72 @@ Als het probleem aanhoudt, neem contact op met support.`,
           </div>
         )}
 
+        {/* Quality Dashboard */}
+        {message.qualityScores && (
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-emerald-900 flex items-center">
+                <Shield className="w-4 h-4 mr-2" />
+                Kwaliteitscontrole
+                {message.qualityImproved && (
+                  <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full font-medium">
+                    Verbeterd
+                  </span>
+                )}
+              </h4>
+            </div>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {Object.entries(message.qualityScores).map(([dim, score]) => {
+                const labels = {
+                  relevance: 'Relevantie',
+                  tone: 'Toon',
+                  completeness: 'Volledigheid',
+                  policy_compliance: 'Beleidsconformiteit'
+                }
+                const pct = Math.round(score * 100)
+                const color = pct >= 80 ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                return (
+                  <div key={dim} className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-emerald-800 font-medium">{labels[dim] || dim}</span>
+                      <span className="text-emerald-700 font-semibold">{pct}%</span>
+                    </div>
+                    <div className="h-2 bg-emerald-100 rounded-full overflow-hidden">
+                      <div className={`h-full ${color} rounded-full transition-all duration-500`}
+                           style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            {message.qualityExplanation && (
+              <p className="text-xs text-emerald-700 italic border-t border-emerald-200 pt-2">
+                {message.qualityExplanation}
+              </p>
+            )}
+            {message.qualityTrace && message.qualityTrace.length > 0 && (
+              <details className="mt-2">
+                <summary className="text-xs text-emerald-600 cursor-pointer hover:text-emerald-800">
+                  Kwaliteitsstappen bekijken ({message.qualityTrace.length} stappen)
+                </summary>
+                <div className="mt-2 space-y-1 pl-2 border-l-2 border-emerald-200">
+                  {message.qualityTrace.map((step, i) => (
+                    <div key={i} className="text-xs text-emerald-700 flex items-center space-x-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                      <span className="font-mono">
+                        {step.action.replace(/_/g, ' ')}
+                        {step.dimension && ` [${step.dimension}]`}
+                        {step.score !== undefined && step.score !== null && ` → ${Math.round(step.score * 100)}%`}
+                        {step.passed !== undefined && (step.passed ? ' ✓' : ' ✗')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </div>
+        )}
+
         {/* Knowledge Sources */}
         {message.sources && message.sources.length > 0 && (
           <div className="border-t border-chatbot-neutral-200 pt-3">
@@ -524,7 +594,7 @@ Als het probleem aanhoudt, neem contact op met support.`,
                 Enhanced AI Assistant
               </h1>
               <p className="text-sm text-chatbot-neutral-500">
-                {userContext.role?.name} • Enhanced RAG (320 docs, 2300+ chunks) • OpenAI Embeddings
+                {userContext.role?.name} • Quality-Aware RAG (320 docs) • Embabel GOAP Agent • GreenPT
               </p>
             </div>
           </div>
@@ -659,9 +729,9 @@ Als het probleem aanhoudt, neem contact op met support.`,
         
         <div className="mt-2 flex justify-between items-center text-xs text-chatbot-neutral-500">
           <div className="flex items-center space-x-4">
-            <span>🔍 Enhanced RAG: 320 documenten, 2300+ chunks</span>
-            <span>📋 OpenAI Embeddings</span>
-            <span>🤖 Enhanced AI</span>
+            <span>🔍 RAG: 320 documenten</span>
+            <span>📊 Kwaliteitscontrole: 4 dimensies</span>
+            <span>🤖 Embabel GOAP Agent</span>
           </div>
           <span>{inputValue.length}/2000</span>
         </div>

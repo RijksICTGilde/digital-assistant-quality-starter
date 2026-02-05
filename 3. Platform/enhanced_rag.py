@@ -25,12 +25,13 @@ def get_openai_client():
         api_key = os.getenv('GREENPT_API_KEY')
         if not api_key:
             raise ValueError("GREENPT_API_KEY environment variable not set")
-        client = OpenAI(api_key=api_key)
+        base_url = os.getenv('GREENPT_BASE_URL', 'https://api.greenpt.ai/v1/')
+        client = OpenAI(api_key=api_key, base_url=base_url)
     return client
 
 # Configuration
-EMBEDDING_MODEL = "text-embedding-3-small"
-EMBEDDING_DIMENSIONS = 1536  # Default for text-embedding-3-small
+EMBEDDING_MODEL = os.getenv('GREENPT_EMBEDDING_MODEL', 'green-embedding')
+EMBEDDING_DIMENSIONS = int(os.getenv('GREENPT_EMBEDDING_DIMENSIONS', '2560'))
 CHUNK_SIZE = 800  # Tokens per chunk
 CHUNK_OVERLAP = 100  # Token overlap between chunks
 MAX_TOKENS_PER_DOCUMENT = 8000  # Stay within model limits
@@ -408,13 +409,12 @@ def is_relevant_query(query: str) -> bool:
         "Beantwoord alleen met 'ja' of 'nee'."
     )
     messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Is deze vraag gerelateerd aan chatbots voor de overheid?\n\nVraag: {query}"}
+        {"role": "user", "content": system_prompt + f"\n\nIs deze vraag gerelateerd aan chatbots voor de overheid?\n\nVraag: {query}"}
     ]
 
     try:
         response = get_openai_client().chat.completions.create(
-            model="gpt-4o-mini",
+            model=os.getenv("GREENPT_MODEL", "green-l"),
             messages=messages,
             max_tokens=3,
             temperature=0
@@ -442,13 +442,12 @@ Gebruik de volgende format voor bronvermelding:
 De context bevat informatie uit verschillende documenten met bronvermelding. Gebruik deze informatie om een accuraat en nuttig antwoord te geven."""
 
     messages = [
-        {"role": "system", "content": enhanced_system_prompt},
-        {"role": "user", "content": f"Context:\n{context}\n\nVraag: {user_query}"}
+        {"role": "user", "content": enhanced_system_prompt + f"\n\nContext:\n{context}\n\nVraag: {user_query}"}
     ]
 
     try:
         response = get_openai_client().chat.completions.create(
-            model="gpt-4o-mini",
+            model=os.getenv("GREENPT_MODEL", "green-l"),
             messages=messages,
             max_tokens=500,
             stream=True

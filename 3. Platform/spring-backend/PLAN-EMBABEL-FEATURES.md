@@ -153,23 +153,36 @@ fun parallelEvaluation(
 
 ## Bigger Features (Future)
 
-### 7. Multiple Specialized Agents
+### 7. Multiple Specialized Agents ✅ DONE
 **Effort:** 3 hours
 
-Create domain-specific agents, let Embabel route automatically:
+Created domain-specific agents with keyword-based routing:
 
+**Files created:**
+- `agent/ComplianceAgent.kt` - Handles GDPR, AI Act, WOO, privacy questions
+- `agent/TechnicalAgent.kt` - Handles implementation, architecture, API questions
+- `agent/AgentRouter.kt` - Routes to appropriate agent based on keywords
+
+**Routing logic:**
 ```kotlin
-@Agent(description = "Handles compliance questions about GDPR, AI Act, WOO")
-class ComplianceAgent { ... }
-
-@Agent(description = "Handles technical AI implementation questions")
-class TechnicalAgent { ... }
-
-@Agent(description = "Handles general digital transformation questions")
-class GeneralAgent { ... }
+val routing = agentRouter.route(request.message)
+// Returns: AgentType.COMPLIANCE, TECHNICAL, or GENERAL
+// Based on keyword matching with confidence score
 ```
 
-**Benefit:** Specialized quality per domain - routing improves answer quality.
+**Debug endpoint:**
+```
+POST /api/chat/route
+{"message": "Wat zijn de GDPR vereisten?"}
+→ {"agentType": "COMPLIANCE", "confidence": 0.45, "matchedKeywords": ["gdpr"]}
+```
+
+**Quality trace includes:**
+```json
+{"action": "agent_routing", "dimension": "compliance", "score": 0.45}
+```
+
+**Benefit:** Specialized prompts per domain improve answer quality. Transparency about which agent handled the request.
 
 ### 8. Human-in-the-Loop with Process Pausing
 **Effort:** 3 hours
@@ -246,7 +259,7 @@ contextRepository.save(
 | 4        | StuckHandler          | 30 min  | ⏸️ Deferred  | Robustness          |
 | 5        | Iterative Improvement | 2 hours | ✅ DONE      | Quality iteration   |
 | 6        | Human-in-the-loop     | 3 hours | TODO         | Governance          |
-| 7        | Multiple agents       | 3 hours | TODO         | Specialization      |
+| 7        | Multiple agents       | 3 hours | ✅ DONE      | Specialization      |
 
 ---
 

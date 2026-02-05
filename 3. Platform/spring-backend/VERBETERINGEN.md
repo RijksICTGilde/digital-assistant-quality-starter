@@ -247,6 +247,52 @@ Beide interfaces tonen nu kwaliteitsscores en bronnen.
 
 ---
 
+## 13. Gespecialiseerde Agents
+
+**Probleem:** Eén generieke agent kan niet optimaal antwoorden op zowel juridische als technische vragen.
+
+**Oplossing:** Drie gespecialiseerde agents met domeinkennis:
+
+| Agent | Specialisatie | Trigger Keywords |
+|-------|---------------|------------------|
+| **ComplianceAgent** | GDPR, AI Act, WOO, privacy | gdpr, avg, privacy, ai act, woo, juridisch |
+| **TechnicalAgent** | Architectuur, API's, implementatie | api, architectuur, integratie, common ground |
+| **QualityAssuranceAgent** | Algemene vragen | (default) |
+
+**Routing werkt als volgt:**
+1. Vraag wordt geanalyseerd op keywords
+2. AgentRouter bepaalt welke agent het beste past
+3. Confidence score wordt berekend
+4. Geselecteerde agent verwerkt de vraag
+
+**Debug endpoint:**
+```bash
+POST /api/chat/route
+{"message": "Wat zijn de GDPR vereisten voor een chatbot?"}
+
+Response:
+{
+  "agentType": "COMPLIANCE",
+  "confidence": 0.45,
+  "matchedKeywords": ["gdpr", "chatbot"],
+  "reason": "Vraag bevat compliance/juridische termen: gdpr"
+}
+```
+
+**Quality trace toont routing:**
+```json
+{
+  "action": "agent_routing",
+  "dimension": "compliance",
+  "score": 0.45,
+  "passed": true
+}
+```
+
+**Voordeel:** Gespecialiseerde prompts per domein verhogen de antwoordkwaliteit. Transparantie over welke agent de vraag behandelt.
+
+---
+
 ## Architectuur Overzicht
 
 ```

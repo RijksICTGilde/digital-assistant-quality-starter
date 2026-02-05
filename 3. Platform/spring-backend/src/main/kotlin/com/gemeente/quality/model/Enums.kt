@@ -33,7 +33,9 @@ enum class ResponseType(@JsonValue val value: String) {
     DIRECT_ANSWER("direct_answer"),
     GUIDANCE("guidance"),
     ESCALATION("escalation"),
-    CLARIFICATION("clarification")
+    CLARIFICATION("clarification"),
+    COMPLIANCE_ANALYSIS("compliance_analysis"),
+    TECHNICAL_GUIDANCE("technical_guidance")
 }
 
 enum class ComplexityLevel(@JsonValue val value: String) {

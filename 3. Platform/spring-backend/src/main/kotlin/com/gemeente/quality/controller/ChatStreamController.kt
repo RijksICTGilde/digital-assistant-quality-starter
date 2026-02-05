@@ -2,8 +2,10 @@ package com.gemeente.quality.controller
 
 import com.embabel.agent.api.invocation.AgentInvocation
 import com.embabel.agent.core.AgentPlatform
+import com.gemeente.quality.agent.AgentRouter
 import com.gemeente.quality.agent.domain.QualityAssuredResponse
 import com.gemeente.quality.model.ChatMessage
+import com.gemeente.quality.model.QualityTraceEntry
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
@@ -21,7 +23,8 @@ import java.time.Duration
 @RestController
 @RequestMapping("/api")
 class ChatStreamController(
-    private val agentPlatform: AgentPlatform
+    private val agentPlatform: AgentPlatform,
+    private val agentRouter: AgentRouter
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -43,14 +46,18 @@ class ChatStreamController(
 
         val sink = Sinks.many().multicast().onBackpressureBuffer<StreamEvent>()
 
+        // Route to appropriate agent
+        val routing = agentRouter.route(request.message)
+
         // Start the agent process in a separate thread
         Thread {
             try {
-                // Emit start event
+                // Emit start event with routing info
                 sink.tryEmitNext(StreamEvent(
                     type = "pipeline_start",
                     action = "quality_pipeline",
-                    message = "Kwaliteitspijplijn gestart"
+                    message = "Kwaliteitspijplijn gestart (${routing.agentType.name.lowercase()} agent)",
+                    data = mapOf("agent" to routing.agentType.name.lowercase())
                 ))
 
                 // Define the pipeline steps
@@ -108,12 +115,24 @@ class ChatStreamController(
                     ))
                 }
 
+                // Add routing trace to response
+                val routingTrace = QualityTraceEntry(
+                    action = "agent_routing",
+                    dimension = routing.agentType.name.lowercase(),
+                    score = routing.confidence,
+                    passed = true,
+                    timestampMs = System.currentTimeMillis()
+                )
+                val responseWithRouting = result.response.copy(
+                    qualityTrace = listOf(routingTrace) + (result.response.qualityTrace ?: emptyList())
+                )
+
                 // Emit final result
                 sink.tryEmitNext(StreamEvent(
                     type = "complete",
                     action = "complete",
                     message = "Klaar",
-                    data = mapOf("response" to result.response)
+                    data = mapOf("response" to responseWithRouting)
                 ))
 
             } catch (e: Exception) {

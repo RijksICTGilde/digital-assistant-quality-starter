@@ -353,13 +353,17 @@ curl -X POST http://localhost:8000/api/chat/memory \
 ### Verification checklist
 1. Send message → session file appears in `backend/sessions/`
 2. Response includes `knowledge_sources` with populated entries
-3. Response includes `validation.sources` and `validation.tone`
-4. Session JSON file has `full_answers` entries with `{"text": ..., "sources": [...]}`
-5. Follow-up question → LLM references previous context
-6. QA index entry has `source_ids` populated for exchanges that used RAG search
-7. Say "niet X, alleen Y" → session summary updates
-8. Ask "wat hadden we eerder besproken" → LLM calls `lookup_past_conversation`
-9. Load an existing (old-format) session → no errors (backwards compat auto-migration)
-10. Send with `use_memory: false` → memory nodes are skipped, validators still run
-11. If tone is rewritten → `validation.tone.original_text` contains original, `main_answer` has rewrite
-12. Memory stores the rewritten text (not the original)
+3. Response includes `validation.sources`, `validation.tone`, and `validation.output_guardrail`
+4. Response includes `triage` with `route`, `skip_llm`, and `triage_log`
+5. `triage_log` shows all guardrail/triage nodes that ran
+6. Session JSON file has `full_answers` entries with `{"text": ..., "sources": [...]}`
+7. Follow-up question → LLM references previous context
+8. QA index entry has `source_ids` populated for exchanges that used RAG search
+9. Say "niet X, alleen Y" → session summary updates
+10. Ask "wat hadden we eerder besproken" → LLM calls `lookup_past_conversation`
+11. Load an existing (old-format) session → no errors (backwards compat auto-migration)
+12. Send with `use_memory: false` → memory nodes are skipped, validators still run
+13. If tone is rewritten → `validation.tone.original_text` contains original, `main_answer` has rewrite
+14. Memory stores the rewritten text (not the original)
+15. When a triage node sets `skip_llm=True` → LLM is not called, but memory is still updated
+16. When input guardrail blocks → response contains the early_response text, `triage.route` is "blocked"

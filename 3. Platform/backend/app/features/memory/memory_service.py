@@ -48,7 +48,11 @@ class MemoryService:
         Returns a dict compatible with the existing StructuredAIResponse
         shape so the frontend can render it unchanged.
         """
-        logger.info(f"[MEMORY] use_memory={use_memory}")
+        logger.info(
+            f"[GRAPH] ═══ START ═══ session={session_id or '(new)'}, "
+            f"memory={'ON' if use_memory else 'OFF'}, "
+            f"message='{message[:60]}{'...' if len(message) > 60 else ''}'"
+        )
 
         result = await self.graph.ainvoke({
             "message": message,
@@ -56,4 +60,13 @@ class MemoryService:
             "user_context": user_context or {},
             "use_memory": use_memory,
         })
-        return result["response"]
+
+        resp = result["response"]
+        triage = resp.get("triage", {})
+        logger.info(
+            f"[GRAPH] ═══ DONE ════ route={triage.get('route', 'llm')}, "
+            f"answer={len(resp.get('main_answer', ''))} chars, "
+            f"sources={len(resp.get('knowledge_sources', []))}, "
+            f"session={resp.get('session_id', '?')}"
+        )
+        return resp

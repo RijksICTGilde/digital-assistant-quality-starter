@@ -108,12 +108,13 @@ def _make_load_session(session_store: SessionStore):
     def load_session(state: ChatState) -> dict:
         session_id = state.get("session_id", "")
         use_memory = state.get("use_memory", True)
+        logger.info(f"[NODE:load_session] ▶ session_id='{session_id}', use_memory={use_memory}")
 
         if use_memory and session_id and session_store.exists(session_id):
             session = session_store.load(session_id)
             if session is not None:
                 logger.info(
-                    f"[MEMORY] Loaded session {session.session_id} "
+                    f"[NODE:load_session] ✓ Loaded existing session {session.session_id} "
                     f"(msgs: {session.message_count}, qa_index: {len(session.qa_index)}, "
                     f"recent: {len(session.recent_messages)})"
                 )
@@ -121,7 +122,7 @@ def _make_load_session(session_store: SessionStore):
 
         session = session_store.create()
         logger.info(
-            f"[MEMORY] Created new session {session.session_id} "
+            f"[NODE:load_session] ✓ Created new session {session.session_id} "
             f"(memory={'ON' if use_memory else 'OFF'})"
         )
         return {"session": session.model_dump()}
@@ -136,6 +137,8 @@ def _build_prompt(state: ChatState) -> dict:
     user_context = state.get("user_context", {})
     use_memory = state.get("use_memory", True)
 
+    logger.info(f"[NODE:build_prompt] ▶ message='{message[:80]}...'" if len(message) > 80 else f"[NODE:build_prompt] ▶ message='{message}'")
+
     # Build system prompt parts
     parts: List[str] = [SYSTEM_PROMPT]
 
@@ -144,10 +147,12 @@ def _build_prompt(state: ChatState) -> dict:
         summary = session.get("summary", "")
         if summary:
             parts.append(f"\n## Sessie-samenvatting\n{summary}")
+            logger.debug(f"[NODE:build_prompt] Layer 2: summary ({len(summary)} chars)")
 
         # Layer 3: Q&A index (last 10)
         qa_index = session.get("qa_index", [])
         if qa_index:
+            logger.debug(f"[NODE:build_prompt] Layer 3: qa_index ({len(qa_index)} entries, using last 10)")
             index_lines = []
             for entry in qa_index[-10:]:
                 verified_tag = "KB-VERIFIED" if entry.get("verified", False) else "UNVERIFIED"
@@ -196,8 +201,12 @@ def _build_prompt(state: ChatState) -> dict:
     # Current user message
     msgs.append(HumanMessage(content=message))
 
-    logger.info(f"[MEMORY] Built {len(msgs)} messages for LLM")
-    logger.debug(f"[MEMORY] System prompt length: {len(system_content)} chars")
+    recent_count = len([m for m in msgs if not isinstance(m, SystemMessage)]) - 1  # exclude current user msg
+    logger.info(
+        f"[NODE:build_prompt] ✓ {len(msgs)} messages "
+        f"(system: {len(system_content)} chars, history: {recent_count} msgs, "
+        f"user_context: {bool(user_context)})"
+    )
 
     return {"messages": msgs, "retrieved_sources": [], "tool_rounds": 0}
 
@@ -208,8 +217,14 @@ def _make_call_llm(llm: ChatOpenAI):
     async def call_llm(state: ChatState) -> dict:
         messages = state["messages"]
         tool_rounds = state.get("tool_rounds", 0)
-        logger.info(f"[TOOL-LOOP] Round {tool_rounds + 1}/{MAX_TOOL_ROUNDS} — calling LLM")
+        logger.info(f"[NODE:call_llm] ▶ round {tool_rounds + 1}/{MAX_TOOL_ROUNDS}, {len(messages)} messages in context")
         response = await llm.ainvoke(messages)
+        content_len = len(response.content) if isinstance(response.content, str) else 0
+        tool_names = [tc["name"] for tc in (response.tool_calls or [])]
+        logger.info(
+            f"[NODE:call_llm] ✓ response: {content_len} chars text, "
+            f"tool_calls={tool_names if tool_names else 'none'}"
+        )
         return {"messages": [response], "tool_rounds": tool_rounds + 1}
 
     return call_llm
@@ -222,13 +237,18 @@ def _should_continue(state: ChatState) -> str:
     tool_rounds = state.get("tool_rounds", 0)
 
     if isinstance(last_msg, AIMessage) and last_msg.tool_calls and tool_rounds < MAX_TOOL_ROUNDS:
+        logger.info(f"[EDGE] call_llm → execute_tools (round {tool_rounds}/{MAX_TOOL_ROUNDS})")
         return "execute_tools"
+    reason = "no tool_calls" if not (isinstance(last_msg, AIMessage) and last_msg.tool_calls) else f"max rounds ({MAX_TOOL_ROUNDS})"
+    logger.info(f"[EDGE] call_llm → bundle_sources ({reason})")
     return "bundle_sources"
 
 
 def _bundle_sources(state: ChatState) -> dict:
     """Deduplicate retrieved_sources and extract assistant text."""
     messages = state["messages"]
+    raw_sources = state.get("retrieved_sources", [])
+    logger.info(f"[NODE:bundle_sources] ▶ {len(raw_sources)} raw sources, {len(messages)} messages")
 
     # Find last AIMessage with text content.
     # Some models return both tool_calls and content; we accept content
@@ -257,7 +277,12 @@ def _bundle_sources(state: ChatState) -> dict:
     source_ids = [s.get("document_id", "") for s in unique_sources if s.get("document_id")]
     exchange_id = f"ex-{uuid.uuid4().hex[:8]}"
 
-    logger.info(f"[MEMORY] Final answer length: {len(assistant_text)} chars, sources: {len(unique_sources)}")
+    deduped = len(raw_sources) - len(unique_sources)
+    logger.info(
+        f"[NODE:bundle_sources] ✓ answer={len(assistant_text)} chars, "
+        f"sources={len(unique_sources)} unique ({deduped} duplicates removed), "
+        f"exchange_id={exchange_id}"
+    )
 
     return {
         "assistant_text": assistant_text,
@@ -271,14 +296,18 @@ def _should_call_llm(state: ChatState) -> str:
     """Conditional edge after triage: skip LLM when triage says so."""
     triage = state.get("triage") or {}
     if triage.get("skip_llm", False):
+        logger.info(f"[EDGE] triage → bundle_triage_response (route={triage.get('route', '?')})")
         return "bundle_triage_response"
+    logger.info("[EDGE] triage → build_prompt (routing to LLM)")
     return "build_prompt"
 
 
 def _should_update_memory(state: ChatState) -> str:
     """Conditional edge: skip memory update when use_memory is False."""
     if state.get("use_memory", True):
+        logger.info("[EDGE] → update_memory")
         return "update_memory"
+    logger.info("[EDGE] → format_response (memory OFF)")
     return "format_response"
 
 
@@ -373,6 +402,10 @@ Geef ALLEEN de bijgewerkte samenvatting terug, geen uitleg."""
         exchange_id = state["exchange_id"]
         source_ids = state.get("source_ids", [])
         unique_sources = state.get("unique_sources", [])
+        logger.info(
+            f"[NODE:update_memory] ▶ exchange_id={exchange_id}, "
+            f"answer={len(assistant_text)} chars, sources={len(source_ids)}"
+        )
 
         # Store full answer
         full_answers = dict(session.get("full_answers", {}))
@@ -424,8 +457,13 @@ Geef ALLEEN de bijgewerkte samenvatting terug, geen uitleg."""
                 logger.warning(f"Summary update failed: {results[1]}")
 
         except Exception as e:
-            logger.error(f"Session memory update failed: {e}")
+            logger.error(f"[NODE:update_memory] Session memory update failed: {e}")
 
+        qa_count = len(session.get("qa_index", []))
+        logger.info(
+            f"[NODE:update_memory] ✓ qa_index={qa_count} entries, "
+            f"summary={len(session.get('summary', ''))} chars"
+        )
         return {"session": session}
 
     return update_memory
@@ -439,10 +477,11 @@ def _make_save_session(session_store: SessionStore):
         session = SessionMemory(**session_data)
         session_store.save(session)
         logger.info(
-            f"[MEMORY] Session saved (summary: {len(session.summary)} chars, "
-            f"qa_index: {len(session.qa_index)} entries, "
+            f"[NODE:save_session] ✓ {session.session_id} "
+            f"(summary: {len(session.summary)} chars, "
+            f"qa_index: {len(session.qa_index)}, "
             f"recent: {len(session.recent_messages)}, "
-            f"sources: {len(state.get('unique_sources', []))})"
+            f"full_answers: {len(session.full_answers)})"
         )
         return {}
 
@@ -454,6 +493,12 @@ def _format_response(state: ChatState) -> dict:
     assistant_text = state.get("assistant_text", "")
     unique_sources = state.get("unique_sources", [])
     session = state["session"]
+    triage = state.get("triage", {})
+    logger.info(
+        f"[NODE:format_response] ▶ answer={len(assistant_text)} chars, "
+        f"sources={len(unique_sources)}, route={triage.get('route', 'llm')}, "
+        f"session={session.get('session_id', '?')}"
+    )
 
     knowledge_sources = [
         {

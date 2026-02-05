@@ -411,11 +411,28 @@ Als het probleem aanhoudt, neem contact op met support.`,
         {message.qualityScores && (
           <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold text-emerald-900 flex items-center">
-                <Shield className="w-4 h-4 mr-2" />
-                Kwaliteitscontrole
+              <h4 className="text-sm font-semibold text-emerald-900 flex items-center flex-wrap gap-2">
+                <span className="flex items-center">
+                  <Shield className="w-4 h-4 mr-2" />
+                  Kwaliteitscontrole
+                </span>
+                {/* Agent type badge */}
+                {message.qualityTrace?.find(t => t.action === 'agent_routing') && (() => {
+                  const routing = message.qualityTrace.find(t => t.action === 'agent_routing')
+                  const agentLabels = {
+                    compliance: { label: 'Compliance', icon: '⚖️', color: 'bg-purple-100 text-purple-800' },
+                    technical: { label: 'Technisch', icon: '⚙️', color: 'bg-blue-100 text-blue-800' },
+                    general: { label: 'Algemeen', icon: '💬', color: 'bg-gray-100 text-gray-800' }
+                  }
+                  const agent = agentLabels[routing.dimension] || agentLabels.general
+                  return (
+                    <span className={`px-2 py-0.5 ${agent.color} text-xs rounded-full font-medium`}>
+                      {agent.icon} {agent.label}
+                    </span>
+                  )
+                })()}
                 {message.qualityImproved && (
-                  <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full font-medium">
+                  <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full font-medium">
                     Verbeterd
                     {message.improvementIterations && message.improvementIterations >= 1 && ` (${message.improvementIterations}x)`}
                   </span>

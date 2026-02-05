@@ -224,7 +224,9 @@ class QualityAssuranceAgent(
             qualityTrace = trace,
             qualityImproved = improvedResponse.wasImproved,
             qualityExplanation = explanation,
-            originalAnswer = originalAnswerForComparison
+            originalAnswer = originalAnswerForComparison,
+            hallucinationDetected = evaluation.hallucinationDetected,
+            ungroundedClaims = if (evaluation.ungroundedClaims.isNotEmpty()) evaluation.ungroundedClaims else null
         )
 
         return QualityAssuredResponse(response = response)
@@ -297,7 +299,7 @@ class QualityAssuranceAgent(
 
             val suggestions = mutableMapOf<QualityDimension, String>()
             tree["improvement_suggestions"]?.let { sugNode ->
-                sugNode.fields().forEach { (key, value) ->
+                sugNode.properties().forEach { (key, value) ->
                     val dim = when (key) {
                         "relevance" -> QualityDimension.RELEVANCE
                         "tone" -> QualityDimension.TONE
@@ -311,12 +313,22 @@ class QualityAssuranceAgent(
                 }
             }
 
+            // Parse hallucination detection
+            val hallucinationDetected = tree["hallucination_detected"]?.asBoolean() ?: false
+            val ungroundedClaims = tree["ungrounded_claims"]?.mapNotNull { it.asText() } ?: emptyList()
+
+            if (hallucinationDetected) {
+                logger.warn("Hallucination detected! Ungrounded claims: $ungroundedClaims")
+            }
+
             QualityEvaluation(
                 scores = scores,
-                passed = failedDimensions.isEmpty(),
+                passed = failedDimensions.isEmpty() && !hallucinationDetected,
                 failedDimensions = failedDimensions,
                 improvementSuggestions = suggestions,
-                evaluationTimeMs = System.currentTimeMillis() - startTime
+                evaluationTimeMs = System.currentTimeMillis() - startTime,
+                hallucinationDetected = hallucinationDetected,
+                ungroundedClaims = ungroundedClaims
             )
         } catch (e: Exception) {
             logger.warn("Failed to parse quality evaluation, using defaults: ${e.message}")
@@ -330,7 +342,9 @@ class QualityAssuranceAgent(
                 passed = false,
                 failedDimensions = listOf(QualityDimension.RELEVANCE, QualityDimension.COMPLETENESS),
                 improvementSuggestions = emptyMap(),
-                evaluationTimeMs = System.currentTimeMillis() - startTime
+                evaluationTimeMs = System.currentTimeMillis() - startTime,
+                hallucinationDetected = false,
+                ungroundedClaims = emptyList()
             )
         }
     }

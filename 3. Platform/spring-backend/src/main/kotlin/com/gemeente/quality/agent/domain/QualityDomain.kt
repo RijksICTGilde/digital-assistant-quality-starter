@@ -35,7 +35,9 @@ data class QualityEvaluation(
     val passed: Boolean,
     val failedDimensions: List<QualityDimension>,
     val improvementSuggestions: Map<QualityDimension, String>,
-    val evaluationTimeMs: Long
+    val evaluationTimeMs: Long,
+    val hallucinationDetected: Boolean = false,
+    val ungroundedClaims: List<String> = emptyList()
 )
 
 data class ImprovedResponse(

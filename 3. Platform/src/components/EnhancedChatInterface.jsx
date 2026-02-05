@@ -241,7 +241,9 @@ Er ging iets mis met de API verbinding. Dit is een fallback response.
         qualityTrace: response.quality_trace || null,
         qualityImproved: response.quality_improved || false,
         qualityExplanation: response.quality_explanation || null,
-        originalAnswer: response.original_answer || null
+        originalAnswer: response.original_answer || null,
+        hallucinationDetected: response.hallucination_detected || false,
+        ungroundedClaims: response.ungrounded_claims || []
       }
 
       setMessages(prev => [...prev, aiMessage])
@@ -427,6 +429,34 @@ Als het probleem aanhoudt, neem contact op met support.`,
                 )
               })}
             </div>
+            {/* Hallucination Warning */}
+            {message.hallucinationDetected && (
+              <div className="bg-red-50 border border-red-300 rounded-lg p-3 mb-3">
+                <div className="flex items-start space-x-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-red-800">
+                      Mogelijk ongecontroleerde informatie gedetecteerd
+                    </p>
+                    <p className="text-xs text-red-700 mt-1">
+                      Dit antwoord bevat mogelijk informatie die niet in de bronnen staat. Controleer de feiten.
+                    </p>
+                    {message.ungroundedClaims && message.ungroundedClaims.length > 0 && (
+                      <details className="mt-2">
+                        <summary className="text-xs text-red-600 cursor-pointer hover:text-red-800">
+                          Bekijk mogelijke hallucinaties ({message.ungroundedClaims.length})
+                        </summary>
+                        <ul className="mt-1 text-xs text-red-700 list-disc list-inside space-y-1">
+                          {message.ungroundedClaims.map((claim, i) => (
+                            <li key={i}>{claim}</li>
+                          ))}
+                        </ul>
+                      </details>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             {message.qualityExplanation && (
               <p className="text-xs text-emerald-700 italic border-t border-emerald-200 pt-2">
                 {message.qualityExplanation}

@@ -70,7 +70,10 @@ data class StructuredAIResponse(
     @JsonProperty("quality_improved") val qualityImproved: Boolean? = null,
     @JsonProperty("quality_explanation") val qualityExplanation: String? = null,
     // Before/After comparison (shows original response before improvement)
-    @JsonProperty("original_answer") val originalAnswer: String? = null
+    @JsonProperty("original_answer") val originalAnswer: String? = null,
+    // Hallucination detection
+    @JsonProperty("hallucination_detected") val hallucinationDetected: Boolean? = null,
+    @JsonProperty("ungrounded_claims") val ungroundedClaims: List<String>? = null
 )
 
 data class ErrorResponse(

@@ -106,6 +106,11 @@ Beoordeel de volgende response op 4 dimensies (score 0.0 tot 1.0):
    - Worden relevante wetten/regelgeving correct gerefereerd?
    - Wordt er GEEN informatie verzonnen die niet in de bronnen staat?
 
+5. HALLUCINATIE CHECK:
+   - Bevat het antwoord claims of feiten die NIET in de bronnen staan?
+   - Let op: datums, cijfers, namen, regelgeving die niet in bronnen genoemd worden
+   - Als de assistent correct zegt "ik kan dit niet beantwoorden", is er GEEN hallucinatie
+
 OORSPRONKELIJKE VRAAG:
 $originalQuestion
 
@@ -121,6 +126,8 @@ Geef je beoordeling UITSLUITEND als JSON (geen andere tekst):
     "tone": 0.0,
     "completeness": 0.0,
     "policy_compliance": 0.0,
+    "hallucination_detected": false,
+    "ungrounded_claims": [],
     "improvement_suggestions": {
         "relevance": "suggestie of null",
         "tone": "suggestie of null",

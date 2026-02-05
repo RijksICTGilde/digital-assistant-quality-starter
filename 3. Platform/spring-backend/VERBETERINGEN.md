@@ -159,6 +159,38 @@ Beide interfaces tonen nu kwaliteitsscores en bronnen.
 
 ---
 
+## 10. Hallucinatie Detectie
+
+**Probleem:** LLM's kunnen informatie "verzinnen" die niet in de bronnen staat. Dit is gevaarlijk voor overheidscontext waar betrouwbaarheid cruciaal is.
+
+**Oplossing:** Automatische detectie van ongecontroleerde informatie:
+
+1. **Evaluatie prompt** vraagt expliciet: "Bevat het antwoord claims die NIET in de bronnen staan?"
+2. **Twee nieuwe velden** in de response:
+   - `hallucination_detected`: boolean vlag
+   - `ungrounded_claims`: lijst van specifieke claims die niet gegrond zijn
+3. **Visuele waarschuwing** in de UI wanneer hallucinatie gedetecteerd wordt
+
+**Voorbeeld detectie:**
+```json
+{
+  "hallucination_detected": true,
+  "ungrounded_claims": [
+    "De AI Act treedt in werking op 1 januari 2025",
+    "85% van de gemeentes gebruikt al AI"
+  ]
+}
+```
+
+**UI Weergave:**
+- Rode waarschuwingsbox met "Mogelijk ongecontroleerde informatie gedetecteerd"
+- Uitklapbare lijst met de specifieke claims
+- Advies om feiten te controleren
+
+**Voordeel:** Gebruikers worden gewaarschuwd wanneer antwoorden mogelijk onbetrouwbare informatie bevatten, zonder dat het antwoord geblokkeerd wordt.
+
+---
+
 ## Architectuur Overzicht
 
 ```
@@ -222,6 +254,8 @@ Beide interfaces tonen nu kwaliteitsscores en bronnen.
 | Criterium | Implementatie |
 |-----------|---------------|
 | LLM's als beoordelaar | "LLM als Rechter" pattern in evaluateQuality stap |
+| Hallucinatie detectie | Automatische detectie van ongecontroleerde claims |
+| Voor/Na vergelijking | Toon origineel en verbeterd antwoord naast elkaar |
 | Transparantie over onzekerheid | Confidence level (high/medium/low) + grounding check |
 | Governance/beleidskaders in de flow | Beleidsconformiteit als aparte kwaliteitsdimensie |
 

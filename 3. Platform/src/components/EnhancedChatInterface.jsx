@@ -240,7 +240,8 @@ Er ging iets mis met de API verbinding. Dit is een fallback response.
         qualityScores: response.quality_scores || null,
         qualityTrace: response.quality_trace || null,
         qualityImproved: response.quality_improved || false,
-        qualityExplanation: response.quality_explanation || null
+        qualityExplanation: response.quality_explanation || null,
+        originalAnswer: response.original_answer || null
       }
 
       setMessages(prev => [...prev, aiMessage])
@@ -430,6 +431,34 @@ Als het probleem aanhoudt, neem contact op met support.`,
               <p className="text-xs text-emerald-700 italic border-t border-emerald-200 pt-2">
                 {message.qualityExplanation}
               </p>
+            )}
+            {/* Before/After Comparison when response was improved */}
+            {message.qualityImproved && message.originalAnswer && (
+              <details className="mt-3 border-t border-emerald-200 pt-2">
+                <summary className="text-xs text-amber-700 cursor-pointer hover:text-amber-900 font-medium flex items-center">
+                  <span className="mr-1">📊</span> Voor/Na vergelijking bekijken
+                </summary>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="text-xs font-semibold text-red-800 mb-2 flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-red-500 mr-2" />
+                      VOOR (Oorspronkelijk)
+                    </div>
+                    <div className="text-xs text-red-900 prose prose-xs max-w-none">
+                      <ReactMarkdown>{message.originalAnswer}</ReactMarkdown>
+                    </div>
+                  </div>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="text-xs font-semibold text-green-800 mb-2 flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                      NA (Verbeterd)
+                    </div>
+                    <div className="text-xs text-green-900 prose prose-xs max-w-none">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
+                  </div>
+                </div>
+              </details>
             )}
             {message.qualityTrace && message.qualityTrace.length > 0 && (
               <details className="mt-2">

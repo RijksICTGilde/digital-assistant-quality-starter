@@ -68,7 +68,9 @@ data class StructuredAIResponse(
     @JsonProperty("quality_scores") val qualityScores: Map<String, Double>? = null,
     @JsonProperty("quality_trace") val qualityTrace: List<QualityTraceEntry>? = null,
     @JsonProperty("quality_improved") val qualityImproved: Boolean? = null,
-    @JsonProperty("quality_explanation") val qualityExplanation: String? = null
+    @JsonProperty("quality_explanation") val qualityExplanation: String? = null,
+    // Before/After comparison (shows original response before improvement)
+    @JsonProperty("original_answer") val originalAnswer: String? = null
 )
 
 data class ErrorResponse(

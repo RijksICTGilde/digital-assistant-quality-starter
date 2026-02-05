@@ -202,6 +202,13 @@ class QualityAssuranceAgent(
             emptyList()
         }
 
+        // Include original answer for before/after comparison when improved
+        val originalAnswerForComparison = if (improvedResponse.wasImproved) {
+            initialResponse.mainAnswer
+        } else {
+            null
+        }
+
         val response = StructuredAIResponse(
             mainAnswer = improvedResponse.mainAnswer,
             responseType = initialResponse.responseType,
@@ -216,7 +223,8 @@ class QualityAssuranceAgent(
             qualityScores = qualityScores,
             qualityTrace = trace,
             qualityImproved = improvedResponse.wasImproved,
-            qualityExplanation = explanation
+            qualityExplanation = explanation,
+            originalAnswer = originalAnswerForComparison
         )
 
         return QualityAssuredResponse(response = response)

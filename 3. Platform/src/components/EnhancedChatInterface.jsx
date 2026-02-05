@@ -26,32 +26,32 @@ const QUICK_SUGGESTIONS = {
   'digital-guide': [
     'Welke stakeholders moet ik betrekken bij een AI implementatie?',
     'Hoe zorg ik voor draagvlak in de organisatie?',
-    'Wat zijn de belangrijkste risico\'s die ik moet managen?'
+    'mcp: Welke wetten zijn beschikbaar?'
   ],
   'civil-servant': [
     'Welke GDPR maatregelen zijn nodig voor een chatbot?',
     'Hoe ga ik om met de AI Act verplichtingen?',
-    'Wat zijn best practices voor transparantie?'
+    'mcp: Heb ik recht op zorgtoeslag met een inkomen van 30.000 euro?'
   ],
   'it-manager': [
     'Welke architectuur principes moet ik volgen?',
     'Hoe voorkom ik vendor lock-in?',
-    'Welke security maatregelen zijn essentieel?'
+    'mcp: Welke wetten zijn beschikbaar?'
   ],
   'project-manager': [
     'Hoe plan ik een AI implementatie stap voor stap?',
     'Welke success metrics moet ik definiëren?',
-    'Hoe manage ik risico\'s bij AI projecten?'
+    'mcp: Bereken huurtoeslag met huur 800 euro en inkomen 25.000 euro'
   ],
   'developer': [
     'Welke open standaarden moet ik gebruiken?',
     'Hoe implementeer ik Common Ground principes?',
-    'Welke APIs zijn beschikbaar voor gemeentes?'
+    'mcp: Welke wetten zijn beschikbaar?'
   ],
   'other': [
     'Wat zijn de belangrijkste juridische aandachtspunten?',
     'Hoe begin ik met digitale transformatie?',
-    'Welke best practices moet ik kennen?'
+    'mcp: Welke wetten zijn beschikbaar?'
   ]
 }
 
@@ -702,7 +702,7 @@ Als het probleem aanhoudt, neem contact op met support.`,
           <div className="flex items-center space-x-4">
             <span>🔍 Enhanced RAG: 320 documenten, 2300+ chunks</span>
             <span>📋 OpenAI Embeddings</span>
-            <span>🤖 Enhanced AI</span>
+            <span>⚖️ <span className="text-chatbot-primary">mcp:</span> voor wetgeving (zorgtoeslag, huurtoeslag, AOW)</span>
           </div>
           <span>{inputValue.length}/2000</span>
         </div>

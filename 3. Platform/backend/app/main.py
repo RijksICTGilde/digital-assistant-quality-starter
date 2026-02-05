@@ -1,9 +1,12 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load .env BEFORE any app imports — modules like enhanced_rag.py
 # read env vars at import time for embedding config.
-load_dotenv()
+# Use explicit path to ensure .env is found regardless of working directory.
+_env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(_env_path)
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware

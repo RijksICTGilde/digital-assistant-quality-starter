@@ -104,8 +104,42 @@ const ChatSidebar = ({ userContext, isMinimized, onToggleMinimize }) => {
   const [selectedDocument, setSelectedDocument] = useState(null)
   const [documentContent, setDocumentContent] = useState('')
   const [loadingDocument, setLoadingDocument] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(384) // w-96 = 384px
+  const [sessionId, setSessionId] = useState(() => {
+    const stored = sessionStorage.getItem('kletsmajoor_session_id')
+    if (stored) console.log('[SESSION] Restored session from storage:', stored)
+    return stored
+  })
+  const [isResizing, setIsResizing] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+
+  // Handle resize drag
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!isResizing) return
+      const newWidth = window.innerWidth - e.clientX
+      setSidebarWidth(Math.max(320, Math.min(1400, newWidth)))
+    }
+
+    const handleMouseUp = () => {
+      setIsResizing(false)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
+    if (isResizing) {
+      document.body.style.cursor = 'ew-resize'
+      document.body.style.userSelect = 'none'
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isResizing])
 
   // Get context-specific example questions
   const getExampleQuestions = () => {
@@ -147,8 +181,32 @@ Stel gerust je vraag - ik kletsmaai er graag over! 🍪`,
     }
   }, [isInitialized, userContext])
 
+  const handleClearSession = async () => {
+    console.log('[SESSION] /clear — deleting session:', sessionId || 'none')
+    if (sessionId) {
+      try {
+        await enhancedAPI.deleteSession(sessionId)
+      } catch (e) {
+        // Ignore — session may already be gone
+      }
+    }
+    setSessionId(null)
+    sessionStorage.removeItem('kletsmajoor_session_id')
+    setIsInitialized(false)
+    setMessages([])
+    setShowSuggestions(true)
+    console.log('[SESSION] Session cleared, ready for new conversation')
+  }
+
   const handleSendMessage = async (message = inputValue.trim()) => {
     if (!message || isLoading) return
+
+    // Handle /clear command
+    if (message.toLowerCase() === '/clear') {
+      setInputValue('')
+      await handleClearSession()
+      return
+    }
 
     const userMessage = {
       id: Date.now(),
@@ -163,7 +221,10 @@ Stel gerust je vraag - ik kletsmaai er graag over! 🍪`,
     setShowSuggestions(false)
 
     try {
-      const response = await enhancedAPI.sendStructuredMessage(message, userContext)
+      console.log('[SESSION] Sending message with session_id:', sessionId || 'NEW')
+      const response = await enhancedAPI.sendSmartMessage(message, userContext, {
+        sessionId
+      })
       
       // Clean up the content by removing StructuredAIResponse references
       let cleanContent = response.main_answer || response.answer || 'Ik kon geen antwoord genereren.'
@@ -184,6 +245,15 @@ Stel gerust je vraag - ik kletsmaai er graag over! 🍪`,
         .replace(/^[\s\n]*/, '') // Remove leading whitespace
         .trim()
       
+      // Store session ID from first response
+      if (response.session_id && !sessionId) {
+        console.log('[SESSION] New session created:', response.session_id)
+        setSessionId(response.session_id)
+        sessionStorage.setItem('kletsmajoor_session_id', response.session_id)
+      } else {
+        console.log('[SESSION] Reusing existing session:', response.session_id)
+      }
+
       const aiMessage = {
         id: Date.now() + 1,
         type: 'ai',
@@ -279,8 +349,20 @@ Ik kon je vraag niet verwerken. Dit kan komen door:
       initial={{ x: 400, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 400, opacity: 0 }}
-      className="fixed right-0 top-0 h-full w-96 bg-white border-l border-chatbot-neutral-200 shadow-xl z-50 flex flex-col"
+      className="fixed right-0 top-0 h-full bg-white border-l border-chatbot-neutral-200 shadow-xl z-50 flex flex-col"
+      style={{ width: sidebarWidth }}
     >
+      {/* Resize handle */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-chatbot-primary/40 active:bg-chatbot-primary/60 transition-colors z-10 group"
+        onMouseDown={(e) => {
+          e.preventDefault()
+          setIsResizing(true)
+        }}
+      >
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-16 bg-chatbot-neutral-300 group-hover:bg-chatbot-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+
       {/* Header */}
       <div className="bg-chatbot-primary text-white p-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">

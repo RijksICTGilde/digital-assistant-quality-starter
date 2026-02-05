@@ -30,8 +30,9 @@ class EnhancedOpenAIService:
             else:
                 logger.info("Running in DEMO MODE - using mock responses")
                 api_key = "demo-key-for-demo-mode"  # Dummy key voor demo
-        
-        self.client = AsyncOpenAI(api_key=api_key)
+
+        base_url = os.getenv("GREENPT_BASE_URL")
+        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url if base_url else None)
         self.demo_mode = demo_mode
         self.model = os.getenv("GREENPT_MODEL", "gpt-4o-2024-08-06")  # Updated voor structured outputs
         self.max_tokens = int(os.getenv("GREENPT_MAX_TOKENS", "2000"))

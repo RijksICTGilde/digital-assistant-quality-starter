@@ -177,9 +177,38 @@ export const enhancedAPI = {
     }
   },
 
-  // Always use structured message
-  async sendSmartMessage(message, userContext) {
-    return await this.sendStructuredMessage(message, userContext)
+  // Memory chat endpoint – recent messages are stored server-side in session
+  async sendMemoryMessage(message, sessionId = null, userContext = {}) {
+    try {
+      const response = await api.post('/api/chat/memory', {
+        message: message.trim(),
+        session_id: sessionId,
+        user_context: {
+          role: userContext.selectedChoice || 'general',
+          organization: userContext.selectedOrganization?.name || null,
+        }
+      })
+      return response.data
+    } catch (error) {
+      console.error('Error in memory message:', error)
+      throw error
+    }
+  },
+
+  // Delete a conversation session
+  async deleteSession(sessionId) {
+    try {
+      const response = await api.delete(`/api/chat/memory/${sessionId}`)
+      return response.data
+    } catch (error) {
+      console.error('Error deleting session:', error)
+      throw error
+    }
+  },
+
+  // Always use memory endpoint (handles first message + tool use + session creation)
+  async sendSmartMessage(message, userContext, { sessionId = null } = {}) {
+    return await this.sendMemoryMessage(message, sessionId, userContext)
   }
 }
 

@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"/Users/robbertuittenbroek/IdeaProjects/digital-assistant-quality-starter/3. Platform/venv/bin/pip\" install --force-reinstall faiss-cpu)",
+      "mcp__ide__getDiagnostics",
+      "Bash(source:*)",
+      "Bash(python3:*)",
+      "Bash(curl:*)",
+      "Bash(cat:*)",
+      "WebSearch",
+      "WebFetch(domain:langchain-ai.github.io)",
+      "WebFetch(domain:api.python.langchain.com)",
+      "WebFetch(domain:reference.langchain.com)",
+      "WebFetch(domain:docs.langchain.com)",
+      "WebFetch(domain:python.langchain.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:realpython.com)",
+      "WebFetch(domain:blog.gopenai.com)",
+      "Bash(git -C /Users/robbertuittenbroek/IdeaProjects/digital-assistant-quality-starter remote -v)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(\"/Users/robbertuittenbroek/IdeaProjects/digital-assistant-quality-starter/3. Platform/venv/bin/pip\" install langchain-openai langchain-core langgraph)"
+    ]
+  }
+}

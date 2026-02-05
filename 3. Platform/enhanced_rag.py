@@ -19,18 +19,39 @@ load_dotenv()  # Also try current directory
 client = None
 
 def get_openai_client():
-    """Get OpenAI client, initializing if necessary (using GreenPT)"""
+    """Get OpenAI client, initializing if necessary (using GreenPT/Moonshot)"""
     global client
     if client is None:
         api_key = os.getenv('GREENPT_API_KEY')
         if not api_key:
             raise ValueError("GREENPT_API_KEY environment variable not set")
-        client = OpenAI(api_key=api_key)
+        base_url = os.getenv('GREENPT_BASE_URL')
+        client = OpenAI(api_key=api_key, base_url=base_url if base_url else None)
     return client
 
 # Configuration
-EMBEDDING_MODEL = "text-embedding-3-small"
-EMBEDDING_DIMENSIONS = 1536  # Default for text-embedding-3-small
+EMBEDDING_MODEL = os.getenv("GREENPT_EMBEDDING_MODEL", "text-embedding-3-small")
+USE_LOCAL_EMBEDDINGS = os.getenv("USE_LOCAL_EMBEDDINGS", "false").lower() == "true"
+LOCAL_EMBEDDING_MODEL = os.getenv("LOCAL_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+
+# Pick dimensions based on which embedding method is active
+if USE_LOCAL_EMBEDDINGS:
+    EMBEDDING_DIMENSIONS = int(os.getenv("LOCAL_EMBEDDING_DIMENSIONS", "384"))
+else:
+    EMBEDDING_DIMENSIONS = int(os.getenv("GREENPT_EMBEDDING_DIMENSIONS", "1536"))
+
+# Local embedding model (loaded lazily)
+_local_model = None
+
+def get_local_embedding_model():
+    """Load local SentenceTransformer model (free, no API tokens)"""
+    global _local_model
+    if _local_model is None:
+        from sentence_transformers import SentenceTransformer
+        print(f"Downloading/loading model: {LOCAL_EMBEDDING_MODEL} ...")
+        _local_model = SentenceTransformer(LOCAL_EMBEDDING_MODEL)
+        print(f"Model loaded. Embedding dimension: {_local_model.get_sentence_embedding_dimension()}")
+    return _local_model
 CHUNK_SIZE = 800  # Tokens per chunk
 CHUNK_OVERLAP = 100  # Token overlap between chunks
 MAX_TOKENS_PER_DOCUMENT = 8000  # Stay within model limits
@@ -100,12 +121,20 @@ class EnhancedRAGSystem:
         
         return url, title, clean_content
     
+    def _get_cache_filename(self) -> str:
+        """Cache filename based on model and dimensions so different configs don't collide"""
+        model_name = LOCAL_EMBEDDING_MODEL if USE_LOCAL_EMBEDDINGS else EMBEDDING_MODEL
+        model_safe = model_name.replace("/", "_").replace("\\", "_")
+        return f"embeddings_{model_safe}_{EMBEDDING_DIMENSIONS}.pkl"
+
     def _initialize_system(self):
         """Initialize the RAG system by loading or creating embeddings"""
         print("Initializing Enhanced RAG System...")
-        
+        print(f"  Model: {'LOCAL ' + LOCAL_EMBEDDING_MODEL if USE_LOCAL_EMBEDDINGS else EMBEDDING_MODEL}")
+        print(f"  Dimensions: {EMBEDDING_DIMENSIONS}")
+
         # Check if we have cached embeddings
-        cache_path = os.path.join(self.cache_dir, "embeddings_cache_v2.pkl")  # v2 to force regeneration with URLs
+        cache_path = os.path.join(self.cache_dir, self._get_cache_filename())
         documents_hash = self._get_documents_hash()
         
         if os.path.exists(cache_path):
@@ -252,38 +281,56 @@ class EnhancedRAGSystem:
         return None
     
     def _create_embeddings(self):
-        """Create embeddings for all chunks using OpenAI API"""
+        """Create embeddings for all chunks using API or local model"""
         if not self.chunks:
             self.embeddings = np.array([])
             return
-        
+
         print(f"Creating embeddings for {len(self.chunks)} chunks...")
+        all_texts = [chunk.content for chunk in self.chunks]
+
+        if USE_LOCAL_EMBEDDINGS:
+            self._create_embeddings_local(all_texts)
+        else:
+            self._create_embeddings_api(all_texts)
+
+    def _create_embeddings_local(self, texts: List[str]):
+        """Create embeddings using local SentenceTransformer (free, no API tokens)"""
+        model = get_local_embedding_model()
+        print(f"Using local model: {LOCAL_EMBEDDING_MODEL}")
+        self.embeddings = model.encode(texts, show_progress_bar=True).astype(np.float32)
+        # Update dimensions to match what the model actually produces
+        global EMBEDDING_DIMENSIONS
+        EMBEDDING_DIMENSIONS = self.embeddings.shape[1]
+        print(f"Embeddings created: {self.embeddings.shape} (dimensions: {EMBEDDING_DIMENSIONS})")
+
+    def _create_embeddings_api(self, texts: List[str]):
+        """Create embeddings using OpenAI-compatible API"""
         embeddings_list = []
-        
+
         # Process chunks in batches to avoid rate limits
         batch_size = 100
-        for i in range(0, len(self.chunks), batch_size):
-            batch_chunks = self.chunks[i:i + batch_size]
-            batch_texts = [chunk.content for chunk in batch_chunks]
-            
+        for i in range(0, len(texts), batch_size):
+            batch_texts = texts[i:i + batch_size]
+
             try:
                 response = get_openai_client().embeddings.create(
                     model=EMBEDDING_MODEL,
                     input=batch_texts,
                     encoding_format="float"
                 )
-                
+
                 batch_embeddings = [data.embedding for data in response.data]
                 embeddings_list.extend(batch_embeddings)
-                
-                print(f"Processed batch {i//batch_size + 1}/{(len(self.chunks) + batch_size - 1)//batch_size}")
-                
+
+                print(f"Processed batch {i//batch_size + 1}/{(len(texts) + batch_size - 1)//batch_size}")
+
             except Exception as e:
                 print(f"Error creating embeddings for batch {i//batch_size + 1}: {e}")
                 # Create zero embeddings as fallback
-                batch_embeddings = [[0.0] * EMBEDDING_DIMENSIONS] * len(batch_chunks)
+                batch_embeddings = [[0.0] * EMBEDDING_DIMENSIONS] * len(batch_texts)
                 embeddings_list.extend(batch_embeddings)
-        
+
         self.embeddings = np.array(embeddings_list, dtype=np.float32)
     
     def _build_index(self):
@@ -307,10 +354,11 @@ class EnhancedRAGSystem:
             'embeddings': self.embeddings
         }
         
-        cache_path = os.path.join(self.cache_dir, "embeddings_cache_v2.pkl")
+        cache_path = os.path.join(self.cache_dir, self._get_cache_filename())
         try:
             with open(cache_path, 'wb') as f:
                 pickle.dump(cache_data, f)
+            print(f"Cache saved: {self._get_cache_filename()}")
         except Exception as e:
             print(f"Error saving cache: {e}")
     
@@ -321,13 +369,17 @@ class EnhancedRAGSystem:
         
         try:
             # Create query embedding
-            response = get_openai_client().embeddings.create(
-                model=EMBEDDING_MODEL,
-                input=[query],
-                encoding_format="float"
-            )
-            query_embedding = np.array([response.data[0].embedding], dtype=np.float32)
-            
+            if USE_LOCAL_EMBEDDINGS:
+                model = get_local_embedding_model()
+                query_embedding = model.encode([query]).astype(np.float32)
+            else:
+                response = get_openai_client().embeddings.create(
+                    model=EMBEDDING_MODEL,
+                    input=[query],
+                    encoding_format="float"
+                )
+                query_embedding = np.array([response.data[0].embedding], dtype=np.float32)
+
             # Normalize query embedding
             query_embedding = query_embedding / np.linalg.norm(query_embedding, axis=1, keepdims=True)
             
@@ -346,8 +398,8 @@ class EnhancedRAGSystem:
             return results
             
         except Exception as e:
-            print(f"Error during retrieval: {e}")
-            return []
+            print(f"Error during retrieval: {type(e).__name__}: {e}")
+            raise
     
     def get_context_for_query(self, query: str, max_chunks: int = 3) -> Tuple[str, List[str]]:
         """Get formatted context and sources for a query"""

@@ -1,17 +1,21 @@
+import os
+from dotenv import load_dotenv
+
+# Load .env BEFORE any app imports — modules like enhanced_rag.py
+# read env vars at import time for embedding config.
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
-import os
-from dotenv import load_dotenv
 from loguru import logger
 
 from app.routers import chat, health, enhanced_chat
+from app.routers import memory_chat
 from app.services.openai_service import OpenAIService
 from app.services.enhanced_openai_service import EnhancedOpenAIService
-
-# Load environment variables
-load_dotenv()
+from app.features.memory.memory_service import MemoryService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -29,7 +33,14 @@ async def lifespan(app: FastAPI):
         enhanced_openai_service = EnhancedOpenAIService()
         app.state.enhanced_openai_service = enhanced_openai_service
         logger.info("Enhanced OpenAI service initialized successfully")
-        
+
+        # Memory-augmented chat service (creates its own ChatOpenAI from env vars)
+        memory_service = MemoryService(
+            enhanced_rag=enhanced_openai_service.enhanced_rag,
+        )
+        app.state.memory_service = memory_service
+        logger.info("Memory service initialized successfully")
+
     except Exception as e:
         logger.error(f"Failed to initialize OpenAI services: {e}")
         raise
@@ -65,6 +76,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(enhanced_chat.router, prefix="/api", tags=["enhanced-chat"])
+app.include_router(memory_chat.router, prefix="/api", tags=["memory-chat"])
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):

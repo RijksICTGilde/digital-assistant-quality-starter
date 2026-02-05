@@ -118,6 +118,20 @@ const getConfidenceColor = (confidence) => {
   return confidence === 'high' ? 'text-chatbot-primary' : confidence === 'medium' ? 'text-chatbot-secondary' : 'text-chatbot-neutral-600'
 }
 
+const SHOW_EVAL_DEBUG = import.meta.env.VITE_SHOW_EVAL_DEBUG === 'true'
+
+const formatScoreLabel = (score) => {
+  if (typeof score !== 'number') return 'n.v.t.'
+  if (score >= 0.8) return 'Hoog'
+  if (score >= 0.5) return 'Gemiddeld'
+  return 'Laag'
+}
+
+const getScoreColor = (score) => {
+  if (typeof score !== 'number') return 'text-chatbot-neutral-500'
+  return score >= 0.8 ? 'text-chatbot-primary' : score >= 0.5 ? 'text-chatbot-secondary' : 'text-chatbot-neutral-600'
+}
+
 const getRiskLevelColor = (level) => {
   return level === 'high' ? 'text-chatbot-neutral-700' : level === 'medium' ? 'text-chatbot-secondary' : 'text-chatbot-primary'
 }
@@ -266,7 +280,8 @@ Er ging iets mis met de API verbinding. Dit is een fallback response.
         complianceChecks: complianceChecks,
         followUpSuggestions: response.follow_up_suggestions || [],
         needsHumanHelp: response.needs_human_expert || response.needs_human_help || false,
-        processingTime: response.processing_time_ms || response.responseTime
+        processingTime: response.processing_time_ms || response.responseTime,
+        evaluation: response.evaluation || {}
       }
 
       setMessages(prev => [...prev, aiMessage])
@@ -500,6 +515,42 @@ Als het probleem aanhoudt, neem contact op met support.`,
                 </div>
               </button>
             ))}
+          </div>
+        )}
+
+        {message.evaluation && Object.keys(message.evaluation).length > 0 && (
+          <div className="text-xs text-chatbot-neutral-500">
+            Kwaliteit:
+            <span className={`ml-1 ${getScoreColor(message.evaluation.relevance)}`}>
+              Relevantie {formatScoreLabel(message.evaluation.relevance)}
+            </span>
+            <span className={`ml-2 ${getScoreColor(message.evaluation.tone)}`}>
+              Toon {formatScoreLabel(message.evaluation.tone)}
+            </span>
+            <span className={`ml-2 ${getScoreColor(message.evaluation.policy_compliance)}`}>
+              Beleidskaders {formatScoreLabel(message.evaluation.policy_compliance)}
+            </span>
+          </div>
+        )}
+
+        {SHOW_EVAL_DEBUG && message.evaluation && Object.keys(message.evaluation).length > 0 && (
+          <div className="rounded-lg border border-chatbot-neutral-200 bg-chatbot-neutral-50 px-3 py-2 text-xs text-chatbot-neutral-600">
+            <div className="font-semibold text-chatbot-neutral-700 mb-1">Debug metrics</div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              <span>Overall: {message.evaluation.overall?.toFixed?.(2) ?? 'n.v.t.'}</span>
+              <span>Relevantie: {message.evaluation.relevance?.toFixed?.(2) ?? 'n.v.t.'}</span>
+              <span>Toon: {message.evaluation.tone?.toFixed?.(2) ?? 'n.v.t.'}</span>
+              <span>Beleidskaders: {message.evaluation.policy_compliance?.toFixed?.(2) ?? 'n.v.t.'}</span>
+              <span>Groundedness: {message.evaluation.groundedness?.toFixed?.(2) ?? 'n.v.t.'}</span>
+              <span>Volledigheid: {message.evaluation.completeness?.toFixed?.(2) ?? 'n.v.t.'}</span>
+            </div>
+            {Array.isArray(message.evaluation.notes) && message.evaluation.notes.length > 0 && (
+              <div className="mt-2 text-chatbot-neutral-500 space-y-1">
+                {message.evaluation.notes.map((note, index) => (
+                  <div key={index}>• {note}</div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

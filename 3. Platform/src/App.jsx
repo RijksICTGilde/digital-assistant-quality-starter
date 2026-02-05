@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ChatbotLanding from './components/ChatbotLanding'
 import OrganizationSelector from './components/OrganizationSelector'
+import RoleSelection from './components/RoleSelection'
 import InfoPages from './components/InfoPages'
 import EnhancedChatInterface from './components/EnhancedChatInterface'
 import LoadingScreen from './components/LoadingScreen'
@@ -9,6 +10,7 @@ import LoadingScreen from './components/LoadingScreen'
 const STEPS = {
   LANDING: 'landing',
   ORGANIZATION: 'organization',
+  ROLE: 'role',
   INFO: 'info',
   CHAT: 'chat'
 }
@@ -46,7 +48,11 @@ function App() {
   }
 
   const handleOrganizationSelect = (organization) => {
-    handleStepTransition(STEPS.INFO, { selectedOrganization: organization })
+    handleStepTransition(STEPS.ROLE, { selectedOrganization: organization })
+  }
+
+  const handleRoleSelect = (roleData) => {
+    handleStepTransition(STEPS.INFO, { role: roleData.role })
   }
 
   const handleChoiceChange = (newChoice) => {
@@ -57,15 +63,8 @@ function App() {
   }
 
   const handleChatbotAccess = () => {
-    // Create a role context based on the user's journey
-    const role = {
-      id: `${userContext.selectedChoice}-${userContext.selectedOrganization?.id}`,
-      name: `Chatbot gebruiker - ${userContext.selectedChoice?.toUpperCase()} - ${userContext.selectedOrganization?.name}`,
-      description: `Geinteresseerd in ${userContext.selectedChoice} voor ${userContext.selectedOrganization?.name} organisatie`
-    }
-
+    // Role is already set by RoleSelection step
     handleStepTransition(STEPS.CHAT, {
-      role,
       projectPhase: userContext.selectedChoice,
       focusArea: userContext.selectedOrganization?.id
     })
@@ -97,13 +96,21 @@ function App() {
           />
         )
 
+      case STEPS.ROLE:
+        return (
+          <RoleSelection
+            onRoleSelect={handleRoleSelect}
+            onBack={() => setCurrentStep(STEPS.ORGANIZATION)}
+          />
+        )
+
       case STEPS.INFO:
         return (
           <InfoPages
             selectedChoice={userContext.selectedChoice}
             selectedOrganization={userContext.selectedOrganization}
             onChatbotAccess={handleChatbotAccess}
-            onBack={() => setCurrentStep(STEPS.ORGANIZATION)}
+            onBack={() => setCurrentStep(STEPS.ROLE)}
             onChoiceChange={handleChoiceChange}
           />
         )

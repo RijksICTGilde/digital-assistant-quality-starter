@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import ChatbotLanding from './components/ChatbotLanding'
 import OrganizationSelector from './components/OrganizationSelector'
 import RoleSelection from './components/RoleSelection'
+import ContextGathering from './components/ContextGathering'
 import InfoPages from './components/InfoPages'
 import EnhancedChatInterface from './components/EnhancedChatInterface'
 import LoadingScreen from './components/LoadingScreen'
@@ -11,6 +12,7 @@ const STEPS = {
   LANDING: 'landing',
   ORGANIZATION: 'organization',
   ROLE: 'role',
+  CONTEXT: 'context',
   INFO: 'info',
   CHAT: 'chat'
 }
@@ -52,7 +54,16 @@ function App() {
   }
 
   const handleRoleSelect = (roleData) => {
-    handleStepTransition(STEPS.INFO, { role: roleData.role })
+    handleStepTransition(STEPS.CONTEXT, { role: roleData.role })
+  }
+
+  const handleContextSubmit = (contextData) => {
+    handleStepTransition(STEPS.INFO, {
+      projectPhase: contextData.projectPhase,
+      focusAreas: contextData.focusAreas,
+      customContext: contextData.customContext,
+      specificNeeds: contextData.specificNeeds
+    })
   }
 
   const handleChoiceChange = (newChoice) => {
@@ -104,13 +115,22 @@ function App() {
           />
         )
 
+      case STEPS.CONTEXT:
+        return (
+          <ContextGathering
+            selectedRole={userContext.role}
+            onContextSubmit={handleContextSubmit}
+            onBack={() => setCurrentStep(STEPS.ROLE)}
+          />
+        )
+
       case STEPS.INFO:
         return (
           <InfoPages
             selectedChoice={userContext.selectedChoice}
             selectedOrganization={userContext.selectedOrganization}
             onChatbotAccess={handleChatbotAccess}
-            onBack={() => setCurrentStep(STEPS.ROLE)}
+            onBack={() => setCurrentStep(STEPS.CONTEXT)}
             onChoiceChange={handleChoiceChange}
           />
         )

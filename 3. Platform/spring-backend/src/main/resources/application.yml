@@ -28,12 +28,22 @@ embabel:
   models:
     default-llm: llama-3.3-70b-instruct
     default-embedding-model: green-embedding
+    # Role-based LLM configuration for cost/quality optimization
+    # Different roles can use different models (all same for now with GreenPT)
+    llms:
+      generator: llama-3.3-70b-instruct    # For initial response generation
+      evaluator: llama-3.3-70b-instruct    # For quality evaluation (could use reasoning model)
+      improver: llama-3.3-70b-instruct     # For response improvement
   agent:
     platform:
       models:
         openai:
           api-key: ${GREENPT_API_KEY}
           base-url: https://api.greenpt.ai
+      # SSE streaming configuration
+      sse:
+        max-buffer-size: 100
+        max-process-buffers: 1000
 
 # Quality agent thresholds (tunable)
 quality:

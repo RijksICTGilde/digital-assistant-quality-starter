@@ -3,6 +3,7 @@ package com.gemeente.quality.agent
 import com.embabel.agent.api.annotation.Action
 import com.embabel.agent.api.annotation.AchievesGoal
 import com.embabel.agent.api.annotation.Agent
+import com.embabel.agent.api.annotation.Condition
 import com.embabel.agent.api.common.OperationContext
 import com.gemeente.quality.agent.domain.*
 import com.gemeente.quality.config.QualityConfig
@@ -13,6 +14,14 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.LoggerFactory
 
+/**
+ * Quality-aware AI assistant using Embabel's GOAP planning.
+ *
+ * Features:
+ * - @Condition methods let GOAP decide when to improve (not hardcoded if-statements)
+ * - LLM role-based model selection for cost/quality optimization
+ * - 5-step quality pipeline: retrieve → generate → evaluate → improve → assemble
+ */
 @Agent(description = "Quality-aware AI assistant for Dutch municipalities. Generates, evaluates, and improves responses with transparent quality scoring.")
 class QualityAssuranceAgent(
     private val ragSearchService: RagSearchService,
@@ -21,6 +30,30 @@ class QualityAssuranceAgent(
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val objectMapper = jacksonObjectMapper()
+
+    // ==================== CONDITIONS ====================
+    // Let GOAP decide when to run actions based on conditions
+
+    /**
+     * Condition: Quality evaluation indicates improvement is needed.
+     * GOAP uses this to decide whether to run the improveResponse action.
+     */
+    @Condition
+    fun needsImprovement(evaluation: QualityEvaluation): Boolean {
+        val needsWork = !evaluation.passed || evaluation.hallucinationDetected
+        if (needsWork) {
+            logger.info("Condition needsImprovement=true: passed=${evaluation.passed}, hallucination=${evaluation.hallucinationDetected}")
+        }
+        return needsWork
+    }
+
+    /**
+     * Condition: Quality evaluation passed all thresholds.
+     * Used for actions that should only run when quality is already good.
+     */
+    @Condition
+    fun qualityPassed(evaluation: QualityEvaluation): Boolean =
+        evaluation.passed && !evaluation.hallucinationDetected
 
     // Step 1: Retrieve relevant context from the knowledge base
     @Action(description = "Retrieve relevant documents from the knowledge base for the user's question")

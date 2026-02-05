@@ -12,6 +12,97 @@ const api = axios.create({
 
 // Enhanced API service voor structured outputs
 export const enhancedAPI = {
+  // Streaming chat endpoint - returns events via SSE for real-time progress
+  async sendStreamingMessage(message, userContext, onEvent) {
+    // Map context (same as sendStructuredMessage)
+    const choiceToRole = {
+      'waarom': 'project-manager',
+      'wat': 'it-manager',
+      'hoe': 'project-manager',
+      'general': 'other'
+    }
+
+    let mappedRole = 'other'
+    if (userContext.role?.id && ['digital-guide', 'civil-servant', 'it-manager', 'project-manager', 'developer', 'other'].includes(userContext.role.id)) {
+      mappedRole = userContext.role.id
+    } else if (userContext.selectedChoice && choiceToRole[userContext.selectedChoice]) {
+      mappedRole = choiceToRole[userContext.selectedChoice]
+    }
+
+    const orgTypeMap = {
+      'local': 'gemeente',
+      'provincial': 'provincie',
+      'national': 'rijk'
+    }
+
+    const mappedContext = {
+      role: mappedRole,
+      roleName: userContext.role?.name || `${userContext.selectedChoice?.toUpperCase()} gebruiker`,
+      projectPhase: userContext.projectPhase || userContext.selectedChoice,
+      focusAreas: userContext.focusAreas || [],
+      specificNeeds: userContext.specificNeeds || [],
+      organizationType: userContext.selectedOrganization ?
+        orgTypeMap[userContext.selectedOrganization.id] || 'overheid' : 'overheid',
+      customContext: userContext.selectedOrganization ?
+        `Organisatie niveau: ${userContext.selectedOrganization.name}. Interesse: ${userContext.selectedChoice}` :
+        userContext.customContext
+    }
+
+    const body = JSON.stringify({
+      message: message.trim(),
+      context: mappedContext,
+      timestamp: new Date().toISOString()
+    })
+
+    const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream'
+      },
+      body
+    })
+
+    if (!response.ok) {
+      throw new Error(`Stream request failed: ${response.status}`)
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let finalResponse = null
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || '' // Keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (line.startsWith('data:')) {
+          const jsonStr = line.slice(5).trim()
+          if (jsonStr) {
+            try {
+              const event = JSON.parse(jsonStr)
+              onEvent(event)
+
+              // Capture final response
+              if (event.type === 'complete' && event.data?.response) {
+                finalResponse = event.data.response
+              }
+            } catch (e) {
+              console.warn('Failed to parse SSE event:', e)
+            }
+          }
+        }
+      }
+    }
+
+    return finalResponse
+  },
+
   // Structured chat endpoint - returns StructuredAIResponse
   async sendStructuredMessage(message, userContext) {
     try {

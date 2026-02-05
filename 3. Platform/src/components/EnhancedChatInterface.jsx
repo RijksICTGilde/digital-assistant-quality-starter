@@ -147,6 +147,7 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(true)
   const [viewingDocument, setViewingDocument] = useState(null)
+  const [streamProgress, setStreamProgress] = useState(null) // For streaming progress
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -185,37 +186,49 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
     setInputValue('')
     setIsLoading(true)
     setShowSuggestions(false)
+    setStreamProgress(null)
 
     try {
       let response
 
-      // Always use structured response with sources
+      // Try streaming first, fallback to regular if it fails
       try {
-        response = await enhancedAPI.sendStructuredMessage(message, userContext)
-      } catch (apiError) {
-        console.warn('API call failed, using fallback:', apiError)
-        // Simplified fallback response
-        response = {
-          main_answer: `## API Error - Fallback Response
+        response = await enhancedAPI.sendStreamingMessage(message, userContext, (event) => {
+          // Update progress based on stream events
+          setStreamProgress(event)
+        })
+      } catch (streamError) {
+        console.warn('Streaming failed, falling back to regular API:', streamError)
+        // Fallback to non-streaming
+        try {
+          response = await enhancedAPI.sendStructuredMessage(message, userContext)
+        } catch (apiError) {
+          console.warn('API call failed, using fallback:', apiError)
+          response = {
+            main_answer: `## API Error - Fallback Response
 
 Er ging iets mis met de API verbinding. Dit is een fallback response.
 
 **Oorspronkelijke vraag:** ${message}
 
 ### Troubleshooting:
-1. Check of de backend draait op http://localhost:8000
-2. Controleer of de OpenAI API key correct is geconfigureerd
+1. Check of de backend draait op http://localhost:8080
+2. Controleer of de GreenPT API key correct is geconfigureerd
 3. Bekijk de browser console voor meer details
 
 **Error:** ${apiError.message}`,
-          response_type: "error_fallback",
-          confidence_level: "low",
-          knowledge_sources: [],
-          follow_up_suggestions: [],
-          needs_human_expert: true,
-          processing_time_ms: 100
+            response_type: "error_fallback",
+            confidence_level: "low",
+            knowledge_sources: [],
+            follow_up_suggestions: [],
+            needs_human_expert: true,
+            processing_time_ms: 100
+          }
         }
       }
+
+      // Clear stream progress after completion
+      setStreamProgress(null)
 
       // Always use structured response format
       let mainContent = response.main_answer || 'Geen antwoord beschikbaar'
@@ -249,6 +262,7 @@ Er ging iets mis met de API verbinding. Dit is een fallback response.
       setMessages(prev => [...prev, aiMessage])
     } catch (error) {
       console.error('Enhanced chat error:', error)
+      setStreamProgress(null)
       const errorMessage = {
         id: Date.now() + 1,
         type: 'ai',
@@ -653,7 +667,7 @@ Als het probleem aanhoudt, neem contact op met support.`,
                 Enhanced AI Assistant
               </h1>
               <p className="text-sm text-chatbot-neutral-500">
-                {userContext.role?.name} • Quality-Aware RAG (320 docs) • Embabel GOAP Agent • GreenPT
+                {userContext.role?.name} • Quality-Aware RAG • Embabel GOAP Agent • Live Streaming
               </p>
             </div>
           </div>
@@ -743,11 +757,79 @@ Als het probleem aanhoudt, neem contact op met support.`,
               <Bot className="w-4 h-4 text-chatbot-neutral-600" />
             </div>
             <div className="flex-1">
-              <div className="inline-block bg-white border border-chatbot-neutral-200 rounded-lg p-4">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-chatbot-primary"></div>
-                  <span className="text-sm text-chatbot-neutral-600">AI is aan het denken...</span>
-                </div>
+              <div className="inline-block bg-white border border-chatbot-neutral-200 rounded-lg p-4 min-w-[280px]">
+                {streamProgress ? (
+                  <div className="space-y-3">
+                    {/* Progress Header */}
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-chatbot-primary"></div>
+                      <span className="text-sm font-medium text-chatbot-neutral-700">
+                        {streamProgress.message}
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    {streamProgress.step && (streamProgress.totalSteps || streamProgress.total_steps) && (() => {
+                      const totalSteps = streamProgress.totalSteps || streamProgress.total_steps
+                      const pct = Math.round((streamProgress.step / totalSteps) * 100)
+                      return (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs text-chatbot-neutral-500">
+                            <span>Stap {streamProgress.step} van {totalSteps}</span>
+                            <span>{pct}%</span>
+                          </div>
+                          <div className="h-2 bg-chatbot-neutral-100 rounded-full overflow-hidden">
+                            <motion.div
+                              className="h-full bg-gradient-to-r from-chatbot-primary to-emerald-500 rounded-full"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${pct}%` }}
+                              transition={{ duration: 0.3 }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* Pipeline Steps */}
+                    <div className="text-xs text-chatbot-neutral-500 space-y-1">
+                      {['retrieveContext', 'generateInitialResponse', 'evaluateQuality', 'improveResponse', 'assembleFinalResponse'].map((step, index) => {
+                        const stepNum = index + 1
+                        const currentStep = streamProgress.step || 0
+                        const isDone = stepNum < currentStep || (streamProgress.type === 'action_complete' && streamProgress.action === step)
+                        const isCurrent = stepNum === currentStep && streamProgress.type !== 'complete'
+                        const stepLabels = {
+                          retrieveContext: 'Context ophalen',
+                          generateInitialResponse: 'Antwoord genereren',
+                          evaluateQuality: 'Kwaliteit beoordelen',
+                          improveResponse: 'Verbeteren',
+                          assembleFinalResponse: 'Afronden'
+                        }
+                        return (
+                          <div key={step} className={`flex items-center space-x-2 ${isDone ? 'text-emerald-600' : isCurrent ? 'text-chatbot-primary font-medium' : 'text-chatbot-neutral-400'}`}>
+                            <span className="w-4 text-center">
+                              {isDone ? '✓' : isCurrent ? '→' : '○'}
+                            </span>
+                            <span>{stepLabels[step]}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Quality Scores (if available) */}
+                    {streamProgress.type === 'quality_score' && streamProgress.data && (
+                      <div className="mt-2 pt-2 border-t border-chatbot-neutral-100">
+                        <div className="text-xs text-emerald-600">
+                          📊 {streamProgress.message}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-chatbot-primary"></div>
+                    <span className="text-sm text-chatbot-neutral-600">Verbinding maken...</span>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
@@ -789,8 +871,8 @@ Als het probleem aanhoudt, neem contact op met support.`,
         <div className="mt-2 flex justify-between items-center text-xs text-chatbot-neutral-500">
           <div className="flex items-center space-x-4">
             <span>🔍 RAG: 320 documenten</span>
-            <span>📊 Kwaliteitscontrole: 4 dimensies</span>
-            <span>🤖 Embabel GOAP Agent</span>
+            <span>📊 4 kwaliteitsdimensies</span>
+            <span>📡 Live streaming</span>
           </div>
           <span>{inputValue.length}/2000</span>
         </div>

@@ -116,7 +116,22 @@ Gebruikersvraag
 
 ---
 
-## 7. RAG met 320 Overheidsdocumenten
+## 7. Voor/Na Vergelijking
+
+**Probleem:** Gebruikers zien niet wat er precies verbeterd is aan een antwoord.
+
+**Oplossing:** Wanneer een antwoord wordt verbeterd, toont de interface beide versies:
+
+- **VOOR (Oorspronkelijk)** - het eerste gegenereerde antwoord
+- **NA (Verbeterd)** - het antwoord na kwaliteitsverbetering
+
+De vergelijking is uitklapbaar in het kwaliteitsdashboard.
+
+**Voordeel:** Volledige transparantie over de kwaliteitsinterventie. Gebruikers kunnen zelf beoordelen of de verbetering nuttig was.
+
+---
+
+## 8. RAG met 320 Overheidsdocumenten
 
 **Probleem:** Antwoorden moeten gebaseerd zijn op actuele, betrouwbare overheidsinformatie.
 
@@ -131,7 +146,7 @@ Gebruikersvraag
 
 ---
 
-## 8. Twee Chat-interfaces
+## 9. Twee Chat-interfaces
 
 **Probleem:** Verschillende gebruikersbehoeften op verschillende momenten.
 

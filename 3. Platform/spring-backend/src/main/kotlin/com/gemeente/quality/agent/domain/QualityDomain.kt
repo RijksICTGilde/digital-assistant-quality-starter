@@ -1,5 +1,7 @@
 package com.gemeente.quality.agent.domain
 
+import com.embabel.agent.api.common.workflow.loop.Feedback
+import com.embabel.common.core.types.ZeroToOne
 import com.gemeente.quality.model.*
 
 /**
@@ -9,6 +11,25 @@ import com.gemeente.quality.model.*
  *
  * Embabel's GOAP planner chains @Action methods automatically based on these types.
  */
+
+/**
+ * Quality feedback for RepeatUntilAcceptable workflow.
+ * Implements Embabel's Feedback interface with quality-specific data.
+ */
+data class QualityFeedback(
+    override val score: ZeroToOne,
+    val evaluation: QualityEvaluation,
+    val improvementSuggestions: String
+) : Feedback
+
+/**
+ * Draft response being iteratively improved.
+ */
+data class ResponseDraft(
+    val content: String,
+    val iteration: Int = 0,
+    val previousScores: List<Double> = emptyList()
+)
 
 data class RagContext(
     val formattedContext: String,
@@ -44,7 +65,19 @@ data class ImprovedResponse(
     val mainAnswer: String,
     val improvementsApplied: List<String>,
     val wasImproved: Boolean,
-    val improvementTimeMs: Long
+    val improvementTimeMs: Long,
+    val iterationCount: Int = 1,
+    val iterationHistory: List<IterationResult> = emptyList()
+)
+
+/**
+ * Result of a single improvement iteration for tracking quality progression.
+ */
+data class IterationResult(
+    val iteration: Int,
+    val overallScore: Double,
+    val dimensionScores: Map<String, Double>,
+    val passed: Boolean
 )
 
 data class QualityAssuredResponse(

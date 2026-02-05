@@ -99,10 +99,10 @@ embabel:
 
 ## Medium Effort Features (Future)
 
-### 5. RepeatUntilAcceptable for Iterative Improvement
+### 5. Iterative Improvement ✅ DONE
 **Effort:** 2 hours
 
-Instead of one improvement attempt, iterate until quality passes (max 3 attempts):
+Implemented iterative improvement that repeats until quality passes (max iterations configurable):
 
 ```kotlin
 @Action(description = "Iteratively improve until quality threshold met")
@@ -244,7 +244,7 @@ contextRepository.save(
 | 2        | SSE streaming         | 1 hour  | ✅ DONE      | User transparency   |
 | 3        | LLM role config       | 30 min  | ✅ DONE      | Cost optimization   |
 | 4        | StuckHandler          | 30 min  | ⏸️ Deferred  | Robustness          |
-| 5        | RepeatUntilAcceptable | 2 hours | TODO         | Quality iteration   |
+| 5        | Iterative Improvement | 2 hours | ✅ DONE      | Quality iteration   |
 | 6        | Human-in-the-loop     | 3 hours | TODO         | Governance          |
 | 7        | Multiple agents       | 3 hours | TODO         | Specialization      |
 

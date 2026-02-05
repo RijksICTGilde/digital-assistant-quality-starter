@@ -157,8 +157,8 @@ class QualityAssuranceAgent(
         return parseEvaluation(evaluationJson, startTime)
     }
 
-    // Step 4: Improve the response if quality thresholds are not met
-    @Action(description = "Improve the response based on quality evaluation feedback")
+    // Step 4: Iteratively improve the response until quality thresholds are met
+    @Action(description = "Iteratively improve the response based on quality evaluation feedback (max 3 iterations)")
     fun improveResponse(
         request: ChatMessage,
         initialResponse: InitialResponse,
@@ -166,36 +166,99 @@ class QualityAssuranceAgent(
         ragContext: RagContext,
         context: OperationContext
     ): ImprovedResponse {
-        if (evaluation.passed) {
-            logger.info("Quality passed all thresholds, no improvement needed.")
+        val maxIterations = qualityConfig.maxImprovementRounds
+        val iterationHistory = mutableListOf<IterationResult>()
+
+        // Record initial evaluation
+        iterationHistory.add(IterationResult(
+            iteration = 0,
+            overallScore = evaluation.scores.values.average(),
+            dimensionScores = evaluation.scores.mapKeys { it.key.name.lowercase() },
+            passed = evaluation.passed
+        ))
+
+        if (evaluation.passed && !evaluation.hallucinationDetected) {
+            logger.info("Quality passed all thresholds on first evaluation, no improvement needed.")
             return ImprovedResponse(
                 mainAnswer = initialResponse.mainAnswer,
                 improvementsApplied = emptyList(),
                 wasImproved = false,
-                improvementTimeMs = 0
+                improvementTimeMs = 0,
+                iterationCount = 0,
+                iterationHistory = iterationHistory
             )
         }
 
-        logger.info("Quality below threshold on: ${evaluation.failedDimensions}. Improving...")
+        logger.info("Quality below threshold on: ${evaluation.failedDimensions}. Starting iterative improvement (max $maxIterations iterations)...")
         val startTime = System.currentTimeMillis()
 
-        val prompt = promptBuilder.buildImprovementPrompt(
-            originalQuestion = request.message,
-            originalResponse = initialResponse.mainAnswer,
-            evaluation = evaluation,
-            ragContext = ragContext.formattedContext,
-            organizationType = request.context.organizationType
-        )
+        var currentAnswer = initialResponse.mainAnswer
+        var currentEvaluation = evaluation
+        var iteration = 0
+        val allImprovements = mutableSetOf<String>()
 
-        val improvedAnswer = context.ai()
-            .withDefaultLlm()
-            .generateText(prompt)
+        while (iteration < maxIterations && (!currentEvaluation.passed || currentEvaluation.hallucinationDetected)) {
+            iteration++
+            logger.info("Improvement iteration $iteration/$maxIterations...")
+
+            // Generate improved response
+            val improvementPrompt = promptBuilder.buildImprovementPrompt(
+                originalQuestion = request.message,
+                originalResponse = currentAnswer,
+                evaluation = currentEvaluation,
+                ragContext = ragContext.formattedContext,
+                organizationType = request.context.organizationType
+            )
+
+            currentAnswer = context.ai()
+                .withDefaultLlm()
+                .generateText(improvementPrompt)
+
+            // Track which dimensions were improved
+            allImprovements.addAll(currentEvaluation.failedDimensions.map { it.name.lowercase() })
+
+            // Re-evaluate the improved response
+            if (iteration < maxIterations) {
+                val evalPrompt = promptBuilder.buildEvaluationPrompt(
+                    originalQuestion = request.message,
+                    response = currentAnswer,
+                    ragContext = ragContext.formattedContext,
+                    organizationType = request.context.organizationType
+                )
+
+                val evalJson = context.ai()
+                    .withDefaultLlm()
+                    .generateText(evalPrompt)
+
+                currentEvaluation = parseEvaluation(evalJson, System.currentTimeMillis())
+
+                // Record iteration result
+                iterationHistory.add(IterationResult(
+                    iteration = iteration,
+                    overallScore = currentEvaluation.scores.values.average(),
+                    dimensionScores = currentEvaluation.scores.mapKeys { it.key.name.lowercase() },
+                    passed = currentEvaluation.passed
+                ))
+
+                if (currentEvaluation.passed && !currentEvaluation.hallucinationDetected) {
+                    logger.info("Quality passed after iteration $iteration!")
+                    break
+                }
+
+                logger.info("Iteration $iteration scores: ${currentEvaluation.scores.map { "${it.key}=${String.format("%.2f", it.value)}" }}")
+            }
+        }
+
+        val totalTimeMs = System.currentTimeMillis() - startTime
+        logger.info("Iterative improvement completed: $iteration iterations in ${totalTimeMs}ms")
 
         return ImprovedResponse(
-            mainAnswer = improvedAnswer,
-            improvementsApplied = evaluation.failedDimensions.map { it.name.lowercase() },
+            mainAnswer = currentAnswer,
+            improvementsApplied = allImprovements.toList(),
             wasImproved = true,
-            improvementTimeMs = System.currentTimeMillis() - startTime
+            improvementTimeMs = totalTimeMs,
+            iterationCount = iteration,
+            iterationHistory = iterationHistory
         )
     }
 
@@ -242,6 +305,18 @@ class QualityAssuranceAgent(
             null
         }
 
+        // Convert iteration history to response format
+        val iterationHistoryForResponse = if (improvedResponse.iterationHistory.isNotEmpty()) {
+            improvedResponse.iterationHistory.map { iter ->
+                QualityIterationEntry(
+                    iteration = iter.iteration,
+                    overallScore = iter.overallScore,
+                    dimensionScores = iter.dimensionScores,
+                    passed = iter.passed
+                )
+            }
+        } else null
+
         val response = StructuredAIResponse(
             mainAnswer = improvedResponse.mainAnswer,
             responseType = initialResponse.responseType,
@@ -259,7 +334,9 @@ class QualityAssuranceAgent(
             qualityExplanation = explanation,
             originalAnswer = originalAnswerForComparison,
             hallucinationDetected = evaluation.hallucinationDetected,
-            ungroundedClaims = if (evaluation.ungroundedClaims.isNotEmpty()) evaluation.ungroundedClaims else null
+            ungroundedClaims = if (evaluation.ungroundedClaims.isNotEmpty()) evaluation.ungroundedClaims else null,
+            improvementIterations = if (improvedResponse.wasImproved) improvedResponse.iterationCount else null,
+            iterationHistory = iterationHistoryForResponse
         )
 
         return QualityAssuredResponse(response = response)
@@ -445,9 +522,14 @@ class QualityAssuranceAgent(
         }
 
         return if (improved.wasImproved) {
+            val iterationInfo = if (improved.iterationCount > 1) {
+                " Na ${improved.iterationCount} verbeterrondes."
+            } else {
+                ""
+            }
             "Dit antwoord is automatisch verbeterd op basis van kwaliteitscontrole. " +
                     "Scores: $scoreDesc. " +
-                    "Verbeterd op: ${improved.improvementsApplied.joinToString(", ")}."
+                    "Verbeterd op: ${improved.improvementsApplied.joinToString(", ")}.$iterationInfo"
         } else {
             "Dit antwoord heeft de kwaliteitscontrole doorstaan. Scores: $scoreDesc."
         }

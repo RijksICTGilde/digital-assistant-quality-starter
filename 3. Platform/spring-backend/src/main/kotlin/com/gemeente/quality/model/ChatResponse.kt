@@ -48,6 +48,16 @@ data class QualityTraceEntry(
     @JsonProperty("timestamp_ms") val timestampMs: Long
 )
 
+/**
+ * Tracks quality progression across improvement iterations.
+ */
+data class QualityIterationEntry(
+    val iteration: Int,
+    @JsonProperty("overall_score") val overallScore: Double,
+    @JsonProperty("dimension_scores") val dimensionScores: Map<String, Double>,
+    val passed: Boolean
+)
+
 data class StructuredAIResponse(
     @JsonProperty("main_answer") val mainAnswer: String,
     @JsonProperty("response_type") val responseType: ResponseType = ResponseType.DIRECT_ANSWER,
@@ -73,7 +83,10 @@ data class StructuredAIResponse(
     @JsonProperty("original_answer") val originalAnswer: String? = null,
     // Hallucination detection
     @JsonProperty("hallucination_detected") val hallucinationDetected: Boolean? = null,
-    @JsonProperty("ungrounded_claims") val ungroundedClaims: List<String>? = null
+    @JsonProperty("ungrounded_claims") val ungroundedClaims: List<String>? = null,
+    // Iterative improvement tracking
+    @JsonProperty("improvement_iterations") val improvementIterations: Int? = null,
+    @JsonProperty("iteration_history") val iterationHistory: List<QualityIterationEntry>? = null
 )
 
 data class ErrorResponse(

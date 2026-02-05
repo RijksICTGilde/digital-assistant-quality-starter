@@ -191,6 +191,62 @@ Beide interfaces tonen nu kwaliteitsscores en bronnen.
 
 ---
 
+## 11. Iteratieve Kwaliteitsverbetering
+
+**Probleem:** Een enkele verbeterpoging is niet altijd genoeg om de kwaliteitsdrempels te halen.
+
+**Oplossing:** Het systeem herhaalt het verbeterproces tot maximaal 3 keer totdat de kwaliteit acceptabel is:
+
+1. Eerste antwoord genereren
+2. Kwaliteit beoordelen
+3. **Als onvoldoende:** Verbeteren → Opnieuw beoordelen → Herhaal (max 3x)
+4. Voortgang per iteratie bijhouden
+
+**Response bevat:**
+```json
+{
+  "improvement_iterations": 2,
+  "iteration_history": [
+    {"iteration": 0, "overall_score": 0.55, "passed": false},
+    {"iteration": 1, "overall_score": 0.72, "passed": false},
+    {"iteration": 2, "overall_score": 0.85, "passed": true}
+  ]
+}
+```
+
+**UI Weergave:**
+- Badge toont aantal iteraties: "Verbeterd (2x)"
+- Uitklapbare grafiek toont kwaliteitsverloop per iteratie
+- Visuele progressiebalken per ronde
+
+**Voordeel:** Hogere eindkwaliteit doordat het systeem blijft verbeteren tot de drempelwaarden gehaald zijn.
+
+---
+
+## 12. Real-time Streaming Pipeline
+
+**Probleem:** Gebruikers zien een loading spinner zonder te weten wat er gebeurt.
+
+**Oplossing:** Server-Sent Events (SSE) streamen de pipeline-voortgang in real-time:
+
+**Endpoint:** `POST /api/chat/stream`
+
+**Events:**
+- `pipeline_start` - Pipeline gestart
+- `action_start` / `action_complete` - Elke stap met voortgang (1/5, 2/5, etc.)
+- `quality_score` - Individuele dimensiescores
+- `improvement` - Wanneer antwoord wordt verbeterd
+- `complete` - Eindresultaat met volledige response
+
+**UI Weergave:**
+- Progressiebalk met percentage
+- Checkmarks voor voltooide stappen
+- Live update van huidige actie
+
+**Voordeel:** Transparant proces zichtbaar voor gebruikers. Demonstreert de kwaliteitspijplijn visueel.
+
+---
+
 ## Architectuur Overzicht
 
 ```

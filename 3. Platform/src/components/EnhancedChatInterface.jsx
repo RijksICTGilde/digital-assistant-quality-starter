@@ -256,7 +256,9 @@ Er ging iets mis met de API verbinding. Dit is een fallback response.
         qualityExplanation: response.quality_explanation || null,
         originalAnswer: response.original_answer || null,
         hallucinationDetected: response.hallucination_detected || false,
-        ungroundedClaims: response.ungrounded_claims || []
+        ungroundedClaims: response.ungrounded_claims || [],
+        improvementIterations: response.improvement_iterations || null,
+        iterationHistory: response.iteration_history || null
       }
 
       setMessages(prev => [...prev, aiMessage])
@@ -415,6 +417,7 @@ Als het probleem aanhoudt, neem contact op met support.`,
                 {message.qualityImproved && (
                   <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full font-medium">
                     Verbeterd
+                    {message.improvementIterations && message.improvementIterations >= 1 && ` (${message.improvementIterations}x)`}
                   </span>
                 )}
               </h4>
@@ -500,6 +503,43 @@ Als het probleem aanhoudt, neem contact op met support.`,
                     <div className="text-xs text-green-900 prose prose-xs max-w-none">
                       <ReactMarkdown>{message.content}</ReactMarkdown>
                     </div>
+                  </div>
+                </div>
+              </details>
+            )}
+            {/* Iteration History - only shows when there was actual iterative improvement */}
+            {message.qualityImproved && message.iterationHistory && message.iterationHistory.length > 1 && (
+              <details className="mt-2">
+                <summary className="text-xs text-blue-600 cursor-pointer hover:text-blue-800 font-medium">
+                  📈 Kwaliteitsverloop bekijken ({message.iterationHistory.length} metingen)
+                </summary>
+                <div className="mt-2 bg-blue-50 rounded-lg p-3">
+                  <div className="space-y-2">
+                    {message.iterationHistory.map((iter, i) => {
+                      const pct = Math.round(iter.overall_score * 100)
+                      const isLast = i === message.iterationHistory.length - 1
+                      const color = iter.passed ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                      return (
+                        <div key={i} className={`flex items-center space-x-3 ${isLast ? 'font-medium' : ''}`}>
+                          <span className="text-xs text-blue-700 w-16">
+                            {iter.iteration === 0 ? 'Start' : `Ronde ${iter.iteration}`}
+                          </span>
+                          <div className="flex-1 h-3 bg-blue-100 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full ${color} rounded-full transition-all duration-500`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className={`text-xs w-12 text-right ${iter.passed ? 'text-emerald-700' : 'text-blue-700'}`}>
+                            {pct}% {iter.passed && '✓'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-blue-200 text-xs text-blue-600">
+                    Kwaliteit verbeterde van {Math.round(message.iterationHistory[0].overall_score * 100)}%
+                    naar {Math.round(message.iterationHistory[message.iterationHistory.length - 1].overall_score * 100)}%
                   </div>
                 </div>
               </details>

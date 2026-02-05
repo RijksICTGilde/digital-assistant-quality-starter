@@ -52,6 +52,7 @@ class ChatState(TypedDict, total=False):
     source_validation: dict   # {grounded, issues, confidence}
     tone_validation: dict     # {appropriate, original_text, adjustments}
     output_guardrail: dict    # {safe, issues, original_text}
+    answer_evaluation: dict   # {overall, relevance, tone, policy_compliance, groundedness, completeness, notes}
 
     # --- Internal: track tool rounds ---
     tool_rounds: int

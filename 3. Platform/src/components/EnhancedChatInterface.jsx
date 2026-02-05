@@ -147,6 +147,7 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(true)
   const [viewingDocument, setViewingDocument] = useState(null)
+  const [sessionId, setSessionId] = useState(null)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -171,8 +172,33 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
     setMessages([welcomeMessage])
   }, [userContext])
 
+  const handleClearSession = async () => {
+    if (sessionId) {
+      try {
+        await enhancedAPI.deleteSession(sessionId)
+      } catch (_) { /* session may already be gone */ }
+    }
+    setSessionId(null)
+    setMessages([{
+      id: Date.now(),
+      type: 'ai',
+      content: generateWelcomeMessage(userContext),
+      timestamp: new Date(),
+      suggestions: QUICK_SUGGESTIONS[userContext.role?.id] || QUICK_SUGGESTIONS.other,
+      enhanced: true
+    }])
+    setShowSuggestions(true)
+  }
+
   const handleSendMessage = async (message = inputValue.trim()) => {
     if (!message || isLoading) return
+
+    // Handle /clear command locally — reset chat + session
+    if (message.toLowerCase() === '/clear') {
+      setInputValue('')
+      await handleClearSession()
+      return
+    }
 
     const userMessage = {
       id: Date.now(),
@@ -189,9 +215,13 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
     try {
       let response
 
-      // Always use structured response with sources
+      // Use the memory/LangGraph endpoint (tools, triage, validators)
       try {
-        response = await enhancedAPI.sendStructuredMessage(message, userContext)
+        response = await enhancedAPI.sendSmartMessage(message, userContext, { sessionId })
+        // Persist the session_id for follow-up messages
+        if (response.session_id) {
+          setSessionId(response.session_id)
+        }
       } catch (apiError) {
         console.warn('API call failed, using fallback:', apiError)
         // Simplified fallback response

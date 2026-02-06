@@ -27,6 +27,7 @@ from app.steps.memory import (
     make_triage_mcp_node,
     make_triage_relevance_node,
     make_update_memory,
+    make_evaluate_answer_node,
     make_validate_sources_node,
     make_validate_tone_node,
     should_call_llm,
@@ -61,6 +62,7 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
     triage_intent = make_triage_intent_node()
     call_llm = make_call_llm(llm_with_tools)
     execute_tools = make_execute_tools_node(tools, _captured_sources)
+    evaluate_answer = make_evaluate_answer_node(llm)
     validate_sources = make_validate_sources_node(llm)
     validate_tone = make_validate_tone_node(llm)
     guardrail_output = make_guardrail_output_node()
@@ -97,6 +99,7 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
     graph.add_node("call_llm", call_llm_with_sync)
     graph.add_node("execute_tools", execute_tools)
     graph.add_node("bundle_sources", bundle_sources)
+    graph.add_node("evaluate_answer", evaluate_answer)
     graph.add_node("validate_sources", validate_sources)
     graph.add_node("validate_tone", validate_tone)
     graph.add_node("guardrail_output", guardrail_output)
@@ -128,7 +131,8 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
         "bundle_sources": "bundle_sources",
     })
     graph.add_edge("execute_tools", "call_llm")
-    graph.add_edge("bundle_sources", "validate_sources")
+    graph.add_edge("bundle_sources", "evaluate_answer")
+    graph.add_edge("evaluate_answer", "validate_sources")
     graph.add_edge("validate_sources", "validate_tone")
 
     # ── Output guardrail (both paths converge here) ─────────────

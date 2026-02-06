@@ -17,6 +17,7 @@ from app.steps.memory.triage_faq import make_triage_faq_node
 from app.steps.memory.triage_intent import make_triage_intent_node
 from app.steps.memory.triage_relevance import make_triage_relevance_node
 from app.steps.memory.triage_response import _bundle_triage_response
+from app.steps.memory.evaluate_answer import make_evaluate_answer_node
 from app.steps.memory.validate_sources import make_validate_sources_node
 from app.steps.memory.validate_tone import make_validate_tone_node
 
@@ -38,6 +39,7 @@ __all__ = [
     "make_triage_mcp_node",
     "make_triage_relevance_node",
     "make_update_memory",
+    "make_evaluate_answer_node",
     "make_validate_sources_node",
     "make_validate_tone_node",
     "should_call_llm",

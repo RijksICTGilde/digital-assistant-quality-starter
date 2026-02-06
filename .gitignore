@@ -55,6 +55,7 @@ coverage.xml
 # Cache directories
 cache/
 **/cache/*.pkl
+.deepeval/
 
 # Node.js
 npm-debug.log*
@@ -67,4 +68,3 @@ yarn-error.log*
 =======
 venv
 .env
-

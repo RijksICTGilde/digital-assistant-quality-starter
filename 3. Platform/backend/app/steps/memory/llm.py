@@ -46,10 +46,14 @@ def should_call_llm(state: ChatState) -> str:
     """Conditional edge after triage: skip LLM when triage says so."""
     triage = state.get("triage") or {}
     if triage.get("skip_llm", False):
-        if triage.get("route") == "mcp":
+        route = triage.get("route", "")
+        if route == "mcp":
             logger.info("[EDGE] triage → call_mcp")
             return "call_mcp"
-        logger.info(f"[EDGE] triage → bundle_triage_response (route={triage.get('route', '?')})")
+        if route == "mcp_gather_params":
+            logger.info("[EDGE] triage → gather_mcp_params (missing parameters)")
+            return "gather_mcp_params"
+        logger.info(f"[EDGE] triage → bundle_triage_response (route={route or '?'})")
         return "bundle_triage_response"
     logger.info("[EDGE] triage → build_prompt (routing to LLM)")
     return "build_prompt"

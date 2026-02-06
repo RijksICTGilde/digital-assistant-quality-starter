@@ -52,6 +52,10 @@ class SessionMemory(BaseModel):
         default_factory=list,
         description="Last N message pairs [{role, content}, ...] stored server-side"
     )
+    pending_mcp_intent: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Pending MCP intent when gathering parameters (law_type, params collected so far)"
+    )
     created_at: str = Field(default_factory=_utcnow_iso)
     updated_at: str = Field(default_factory=_utcnow_iso)
     message_count: int = Field(default=0)

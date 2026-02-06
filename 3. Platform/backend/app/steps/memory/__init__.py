@@ -7,7 +7,12 @@ from app.steps.memory._triage import _default_triage, _triage_already_decided
 from app.steps.memory.guardrail_input import make_guardrail_input_node
 from app.steps.memory.guardrail_output import make_guardrail_output_node
 from app.steps.memory.llm import make_call_llm, should_call_llm, should_continue
-from app.steps.memory.mcp import make_call_mcp_node, make_format_mcp_node, make_triage_mcp_node
+from app.steps.memory.mcp import (
+    make_call_mcp_node,
+    make_format_mcp_node,
+    make_gather_mcp_params_node,
+    make_triage_mcp_node,
+)
 from app.steps.memory.memory_update import make_update_memory
 from app.steps.memory.prompt import build_prompt
 from app.steps.memory.response import format_response, should_update_memory
@@ -30,6 +35,7 @@ __all__ = [
     "make_call_llm",
     "make_call_mcp_node",
     "make_format_mcp_node",
+    "make_gather_mcp_params_node",
     "make_guardrail_input_node",
     "make_guardrail_output_node",
     "make_load_session",

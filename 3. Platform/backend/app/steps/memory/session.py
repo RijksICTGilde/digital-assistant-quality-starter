@@ -42,7 +42,20 @@ def make_save_session(session_store: SessionStore):
     def save_session(state: ChatState) -> dict:
         from app.features.memory.models import SessionMemory
 
-        session_data = state["session"]
+        session_data = dict(state["session"])
+
+        # Handle session_update if present (e.g., from gather_mcp_params)
+        session_update = state.get("session_update")
+        if session_update:
+            logger.info(f"[NODE:save_session] ▶ merging session_update: {list(session_update.keys())}")
+            session_data.update(session_update)
+
+        # Handle clear_pending_mcp if set (after successful MCP call with params)
+        triage = state.get("triage") or {}
+        if triage.get("clear_pending_mcp"):
+            session_data.pop("pending_mcp_intent", None)
+            logger.info("[NODE:save_session] ▶ cleared pending_mcp_intent")
+
         session = SessionMemory(**session_data)
         session_store.save(session)
         logger.info(
@@ -52,6 +65,6 @@ def make_save_session(session_store: SessionStore):
             f"recent: {len(session.recent_messages)}, "
             f"full_answers: {len(session.full_answers)})"
         )
-        return {}
+        return {"session": session.model_dump()}
 
     return save_session

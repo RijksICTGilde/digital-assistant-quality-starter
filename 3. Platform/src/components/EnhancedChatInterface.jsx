@@ -22,36 +22,38 @@ import ReactMarkdown from 'react-markdown'
 import { enhancedAPI, demoResponses } from '../services/enhanced_api'
 import DocumentViewer from './DocumentViewer'
 
+// Quick suggestions demonstrating the RegelRecht/MCP integration
+// These show how a chatbot can answer citizen questions about toeslagen
 const QUICK_SUGGESTIONS = {
   'digital-guide': [
-    'Welke stakeholders moet ik betrekken bij een AI implementatie?',
-    'Hoe zorg ik voor draagvlak in de organisatie?',
-    'mcp: Welke wetten zijn beschikbaar?'
+    'Heb ik recht op zorgtoeslag?',
+    'Welke wetten zijn beschikbaar in RegelRecht?',
+    'Kom ik in aanmerking voor huurtoeslag?'
   ],
   'civil-servant': [
-    'Welke GDPR maatregelen zijn nodig voor een chatbot?',
-    'Hoe ga ik om met de AI Act verplichtingen?',
-    'mcp: Heb ik recht op zorgtoeslag met een inkomen van 30.000 euro?'
+    'Heb ik recht op zorgtoeslag?',
+    'Welke toeslagen kan ik aanvragen?',
+    'Kom ik in aanmerking voor AOW?'
   ],
   'it-manager': [
-    'Welke architectuur principes moet ik volgen?',
-    'Hoe voorkom ik vendor lock-in?',
-    'mcp: Welke wetten zijn beschikbaar?'
+    'Welke wetten zijn beschikbaar in RegelRecht?',
+    'Heb ik recht op zorgtoeslag?',
+    'Kom ik in aanmerking voor bijstand?'
   ],
   'project-manager': [
-    'Hoe plan ik een AI implementatie stap voor stap?',
-    'Welke success metrics moet ik definiëren?',
-    'mcp: Bereken huurtoeslag met huur 800 euro en inkomen 25.000 euro'
+    'Heb ik recht op zorgtoeslag?',
+    'Welke toeslagen zijn er beschikbaar?',
+    'Kom ik in aanmerking voor huurtoeslag?'
   ],
   'developer': [
-    'Welke open standaarden moet ik gebruiken?',
-    'Hoe implementeer ik Common Ground principes?',
-    'mcp: Welke wetten zijn beschikbaar?'
+    'Welke wetten zijn beschikbaar in RegelRecht?',
+    'Heb ik recht op zorgtoeslag?',
+    'Kom ik in aanmerking voor huurtoeslag?'
   ],
   'other': [
-    'Wat zijn de belangrijkste juridische aandachtspunten?',
-    'Hoe begin ik met digitale transformatie?',
-    'mcp: Welke wetten zijn beschikbaar?'
+    'Heb ik recht op zorgtoeslag?',
+    'Kom ik in aanmerking voor huurtoeslag?',
+    'Welke toeslagen zijn er beschikbaar?'
   ]
 }
 
@@ -507,7 +509,11 @@ Als het probleem aanhoudt, neem contact op met support.`,
         {/* Message Metadata */}
         <div className="flex items-center justify-between text-xs text-chatbot-neutral-400 border-t border-chatbot-neutral-100 pt-2">
           <div className="flex items-center space-x-3">
-            {message.triage?.route === 'faq' ? (
+            {message.triage?.route === 'mcp' ? (
+              <span className="text-purple-600">⚖️ Door RegelRecht berekend</span>
+            ) : message.triage?.route === 'mcp_gather_params' ? (
+              <span className="text-purple-600">⚖️ RegelRecht - wacht op gegevens</span>
+            ) : message.triage?.route === 'faq' ? (
               <span className="text-green-600">🎯 FAQ Match</span>
             ) : (
               <span>{formatResponseType(message.responseType)}</span>
@@ -702,7 +708,7 @@ Als het probleem aanhoudt, neem contact op met support.`,
           <div className="flex items-center space-x-4">
             <span>🔍 Enhanced RAG: 320 documenten, 2300+ chunks</span>
             <span>📋 OpenAI Embeddings</span>
-            <span>⚖️ <span className="text-chatbot-primary">mcp:</span> voor wetgeving (zorgtoeslag, huurtoeslag, AOW)</span>
+            <span>⚖️ RegelRecht: automatisch voor toeslagen & wetgeving</span>
           </div>
           <span>{inputValue.length}/2000</span>
         </div>

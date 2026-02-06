@@ -53,6 +53,10 @@ class ChatState(TypedDict, total=False):
     tone_validation: dict     # {appropriate, original_text, adjustments}
     output_guardrail: dict    # {safe, issues, original_text}
     answer_evaluation: dict   # {overall, relevance, tone, policy_compliance, groundedness, completeness, notes}
+    answer_evaluation_before: dict  # evaluation snapshot before refinement
+    refine_decision: dict     # {should_refine, reasons, thresholds, scores_used}
+    refined_once: bool
+    answer_before: str
 
     # --- Internal: track tool rounds ---
     tool_rounds: int

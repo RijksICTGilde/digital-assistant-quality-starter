@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 45000, // Longer timeout voor structured responses
+  timeout: 180000, // Longer timeout for DeepEval + refine flow
   headers: {
     'Content-Type': 'application/json',
   },
@@ -19,11 +19,11 @@ export const enhancedAPI = {
       // Map choice to valid role enum
       const choiceToRole = {
         'waarom': 'project-manager',
-        'wat': 'it-manager', 
+        'wat': 'it-manager',
         'hoe': 'project-manager',
         'general': 'other'
       }
-      
+
       // Determine the correct role - prioritize valid enum values
       let mappedRole = 'other'
       if (userContext.role?.id && ['digital-guide', 'civil-servant', 'it-manager', 'project-manager', 'developer', 'other'].includes(userContext.role.id)) {
@@ -31,14 +31,14 @@ export const enhancedAPI = {
       } else if (userContext.selectedChoice && choiceToRole[userContext.selectedChoice]) {
         mappedRole = choiceToRole[userContext.selectedChoice]
       }
-      
+
       const mappedContext = {
         role: mappedRole,
         roleName: userContext.role?.name || `${userContext.selectedChoice?.toUpperCase()} gebruiker`,
         projectPhase: userContext.projectPhase || userContext.selectedChoice,
         focusAreas: userContext.focusAreas || [],
         specificNeeds: userContext.specificNeeds || [],
-        customContext: userContext.selectedOrganization ? 
+        customContext: userContext.selectedOrganization ?
           `Organisatie niveau: ${userContext.selectedOrganization.name}. Interesse: ${userContext.selectedChoice}` :
           userContext.customContext
       }
@@ -70,7 +70,7 @@ export const enhancedAPI = {
         query: query,
         max_results: maxResults
       })
-      
+
       if (documentTypes && documentTypes.length > 0) {
         params.append('document_types', documentTypes.join(','))
       }
@@ -244,11 +244,11 @@ Voor een gemeente chatbot die burgerservice ondersteunt, gelden de volgende **GD
 - **Encryptie** van data in transit en at rest
 - Toegangscontrole voor beheerders
 - Regular security assessments`,
-    
+
     response_type: "compliance_analysis",
     confidence_level: "high",
     complexity: "moderate",
-    
+
     action_items: [
       {
         title: "DPIA uitvoeren",
@@ -263,7 +263,7 @@ Voor een gemeente chatbot die burgerservice ondersteunt, gelden de volgende **GD
         timeline: "Voor go-live"
       }
     ],
-    
+
     compliance_checks: [
       {
         regulation: "gdpr",
@@ -273,7 +273,7 @@ Voor een gemeente chatbot die burgerservice ondersteunt, gelden de volgende **GD
         risk_level: "medium"
       }
     ],
-    
+
     knowledge_sources: [
       {
         title: "GDPR Handreiking Overheid",
@@ -283,7 +283,7 @@ Voor een gemeente chatbot die burgerservice ondersteunt, gelden de volgende **GD
         document_type: "guideline"
       }
     ],
-    
+
     follow_up_suggestions: [
       {
         question: "Hoe stel ik een DPIA op voor een chatbot?",
@@ -292,11 +292,11 @@ Voor een gemeente chatbot die burgerservice ondersteunt, gelden de volgende **GD
       },
       {
         question: "Welke bewaartermijnen zijn gebruikelijk voor chat logs?",
-        category: "legal", 
+        category: "legal",
         relevance: 0.8
       }
     ],
-    
+
     needs_human_expert: false,
     relevant_regulations: ["gdpr"],
     processing_time_ms: 1500
@@ -332,7 +332,7 @@ Voor een gemeente chatbot die burgerservice ondersteunt, gelden de volgende **GD
 - Docker containers
 - Kubernetes orchestration
 - Cloud-agnostic (Azure/AWS/GCP)`,
-    
+
     solution_approach: "Cloud-native microservices architectuur",
     implementation_steps: [
       {
@@ -341,7 +341,7 @@ Voor een gemeente chatbot die burgerservice ondersteunt, gelden de volgende **GD
         priority: "high"
       }
     ],
-    
+
     technology_stack: ["FastAPI", "React", "PostgreSQL", "Docker", "Kubernetes"],
     best_practices: ["API versioning", "Health checks", "Monitoring"],
     processing_time_ms: 1200

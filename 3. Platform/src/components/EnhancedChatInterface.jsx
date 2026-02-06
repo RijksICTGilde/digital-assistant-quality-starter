@@ -22,36 +22,38 @@ import ReactMarkdown from 'react-markdown'
 import { enhancedAPI, demoResponses } from '../services/enhanced_api'
 import DocumentViewer from './DocumentViewer'
 
+// Quick suggestions demonstrating the RegelRecht/MCP integration
+// These show how a chatbot can answer citizen questions about toeslagen
 const QUICK_SUGGESTIONS = {
   'digital-guide': [
-    'Welke stakeholders moet ik betrekken bij een AI implementatie?',
-    'Hoe zorg ik voor draagvlak in de organisatie?',
-    'Wat zijn de belangrijkste risico\'s die ik moet managen?'
+    'Heb ik recht op zorgtoeslag?',
+    'Welke wetten zijn beschikbaar in RegelRecht?',
+    'Kom ik in aanmerking voor huurtoeslag?'
   ],
   'civil-servant': [
-    'Welke GDPR maatregelen zijn nodig voor een chatbot?',
-    'Hoe ga ik om met de AI Act verplichtingen?',
-    'Wat zijn best practices voor transparantie?'
+    'Heb ik recht op zorgtoeslag?',
+    'Welke toeslagen kan ik aanvragen?',
+    'Kom ik in aanmerking voor AOW?'
   ],
   'it-manager': [
-    'Welke architectuur principes moet ik volgen?',
-    'Hoe voorkom ik vendor lock-in?',
-    'Welke security maatregelen zijn essentieel?'
+    'Welke wetten zijn beschikbaar in RegelRecht?',
+    'Heb ik recht op zorgtoeslag?',
+    'Kom ik in aanmerking voor bijstand?'
   ],
   'project-manager': [
-    'Hoe plan ik een AI implementatie stap voor stap?',
-    'Welke success metrics moet ik definiëren?',
-    'Hoe manage ik risico\'s bij AI projecten?'
+    'Heb ik recht op zorgtoeslag?',
+    'Welke toeslagen zijn er beschikbaar?',
+    'Kom ik in aanmerking voor huurtoeslag?'
   ],
   'developer': [
-    'Welke open standaarden moet ik gebruiken?',
-    'Hoe implementeer ik Common Ground principes?',
-    'Welke APIs zijn beschikbaar voor gemeentes?'
+    'Welke wetten zijn beschikbaar in RegelRecht?',
+    'Heb ik recht op zorgtoeslag?',
+    'Kom ik in aanmerking voor huurtoeslag?'
   ],
   'other': [
-    'Wat zijn de belangrijkste juridische aandachtspunten?',
-    'Hoe begin ik met digitale transformatie?',
-    'Welke best practices moet ik kennen?'
+    'Heb ik recht op zorgtoeslag?',
+    'Kom ik in aanmerking voor huurtoeslag?',
+    'Welke toeslagen zijn er beschikbaar?'
   ]
 }
 
@@ -292,6 +294,7 @@ Er ging iets mis met de API verbinding. Dit is een fallback response.
         followUpSuggestions: response.follow_up_suggestions || [],
         needsHumanHelp: response.needs_human_expert || response.needs_human_help || false,
         processingTime: response.processing_time_ms || response.responseTime,
+        triage: response.triage || null
         evaluation: response.evaluation || {}
       }
 
@@ -568,10 +571,24 @@ Als het probleem aanhoudt, neem contact op met support.`,
         {/* Message Metadata */}
         <div className="flex items-center justify-between text-xs text-chatbot-neutral-400 border-t border-chatbot-neutral-100 pt-2">
           <div className="flex items-center space-x-3">
-            <span>{formatResponseType(message.responseType)}</span>
-            <span className={getConfidenceColor(message.confidence)}>
-              Vertrouwen: {formatConfidence(message.confidence)}
-            </span>
+            {message.triage?.route === 'mcp' ? (
+              <span className="text-purple-600">⚖️ Door RegelRecht berekend</span>
+            ) : message.triage?.route === 'mcp_gather_params' ? (
+              <span className="text-purple-600">⚖️ RegelRecht - wacht op gegevens</span>
+            ) : message.triage?.route === 'faq' ? (
+              <span className="text-green-600">🎯 FAQ Match</span>
+            ) : (
+              <span>{formatResponseType(message.responseType)}</span>
+            )}
+            {message.triage?.faq_match?.score ? (
+              <span className="text-green-600">
+                FAISS: {(message.triage.faq_match.score * 100).toFixed(1)}%
+              </span>
+            ) : (
+              <span className={getConfidenceColor(message.confidence)}>
+                Vertrouwen: {formatConfidence(message.confidence)}
+              </span>
+            )}
             {message.processingTime && (
               <span>⏱️ {formatProcessingTime(message.processingTime)}</span>
             )}
@@ -753,6 +770,7 @@ Als het probleem aanhoudt, neem contact op met support.`,
           <div className="flex items-center space-x-4">
             <span>🔍 Enhanced RAG: 320 documenten, 2300+ chunks</span>
             <span>📋 OpenAI Embeddings</span>
+            <span>⚖️ RegelRecht: automatisch voor toeslagen & wetgeving</span>
             {sessionId && (
               <span
                 className="font-mono cursor-pointer hover:text-chatbot-primary"

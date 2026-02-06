@@ -20,6 +20,8 @@ from app.steps.memory import (
     format_response,
     make_call_llm,
     make_call_mcp_node,
+    make_format_mcp_node,
+    make_gather_mcp_params_node,
     make_guardrail_input_node,
     make_guardrail_output_node,
     make_load_session,
@@ -39,11 +41,22 @@ from app.steps.memory import (
 from app.steps.state import ChatState
 
 
-def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionStore):
+def build_chat_graph(
+    llm: ChatOpenAI,
+    enhanced_rag: Any,
+    session_store: SessionStore,
+    faq_service: Any = None,
+):
     """Assemble and compile the LangGraph chat graph.
 
-    Dependencies (llm, enhanced_rag, session_store) are captured via closures
-    in the node factory functions.
+    Dependencies (llm, enhanced_rag, session_store, faq_service) are captured
+    via closures in the node factory functions.
+
+    Args:
+        llm: The ChatOpenAI instance for LLM calls
+        enhanced_rag: The EnhancedRAGSystem for knowledge retrieval
+        session_store: The SessionStore for session persistence
+        faq_service: Optional FAQService for FAQ matching (skips LLM for exact matches)
     """
     # Mutable containers shared between tools and graph nodes
     _state_ref: Dict[str, Any] = {}
@@ -62,9 +75,9 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
     # Build node functions
     load_session = make_load_session(session_store)
     guardrail_input = make_guardrail_input_node()
-    triage_mcp = make_triage_mcp_node()
+    triage_mcp = make_triage_mcp_node(llm=llm)
     triage_relevance = make_triage_relevance_node()
-    triage_faq = make_triage_faq_node()
+    triage_faq = make_triage_faq_node(faq_service=faq_service)
     triage_intent = make_triage_intent_node()
     call_llm = make_call_llm(llm_with_tools)
     execute_tools = make_execute_tools_node(tools, _captured_sources)
@@ -73,7 +86,9 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
     validate_tone = make_validate_tone_node(llm)
     guardrail_output = make_guardrail_output_node()
     mcp_tool_name = os.getenv("MCP_TOOL_NAME") or None
-    call_mcp = make_call_mcp_node(mcp_tool_name)
+    call_mcp = make_call_mcp_node(mcp_tool_name=mcp_tool_name)
+    format_mcp = make_format_mcp_node(llm)
+    gather_mcp_params = make_gather_mcp_params_node()
     update_memory = make_update_memory(llm)
     save_session = make_save_session(session_store)
 
@@ -113,6 +128,8 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
     graph.add_node("save_session", save_session)
     graph.add_node("format_response", format_response)
     graph.add_node("call_mcp", call_mcp)
+    graph.add_node("format_mcp", format_mcp)
+    graph.add_node("gather_mcp_params", gather_mcp_params)
 
     # Edges
     graph.add_edge(START, "load_session")
@@ -123,11 +140,12 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
     graph.add_edge("triage_mcp", "triage_relevance")
     graph.add_edge("triage_relevance", "triage_faq")
     graph.add_edge("triage_faq", "triage_intent")
-    # After triage: skip LLM, route to MCP, or proceed normally
+    # After triage: skip LLM, route to MCP, gather params, or proceed normally
     graph.add_conditional_edges("triage_intent", should_call_llm, {
         "build_prompt": "build_prompt",
         "bundle_triage_response": "bundle_triage_response",
         "call_mcp": "call_mcp",
+        "gather_mcp_params": "gather_mcp_params",
     })
 
     # ── LLM pipeline (normal flow) ──────────────────────────────
@@ -151,11 +169,15 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
         "format_response": "format_response",
     })
 
-    # ── MCP bypasses validators, goes straight to memory/response ─
-    graph.add_conditional_edges("call_mcp", should_update_memory, {
+    # ── MCP: fetch data → format with LLM → memory/response ─
+    graph.add_edge("call_mcp", "format_mcp")
+    graph.add_conditional_edges("format_mcp", should_update_memory, {
         "update_memory": "update_memory",
         "format_response": "format_response",
     })
+
+    # ── MCP gather params: ask for missing info → save session → response ─
+    graph.add_edge("gather_mcp_params", "save_session")
 
     graph.add_edge("update_memory", "save_session")
     graph.add_edge("save_session", "format_response")

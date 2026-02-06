@@ -1,0 +1,32 @@
+# Build artifacts
+target/
+*.jar
+*.war
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# Logs
+*.log
+logs/
+
+# Cache (will be mounted as volume)
+cache/
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+src/test/
+
+# Maven wrapper (already in image)
+.mvn/wrapper/maven-wrapper.jar

@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Backend (has its own Dockerfile)
+spring-backend/
+backend/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Environment files (secrets)
+.env
+.env.local
+.env.production
+
+# Test files
+coverage/
+*.test.js
+*.spec.js

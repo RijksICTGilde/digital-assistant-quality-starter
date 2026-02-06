@@ -1,0 +1,40 @@
+services:
+  backend:
+    build:
+      context: ./spring-backend
+      dockerfile: Dockerfile
+    container_name: quality-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - GREENPT_API_KEY=${GREENPT_API_KEY}
+      - DOCUMENTS_PATH=/data/content
+      - CACHE_PATH=/app/cache/vector-store.json
+    volumes:
+      # Mount the datasets for RAG
+      - ../1. Datasets/Scrapen/scraped_content/content:/data/content:ro
+      # Persist cache (embeddings, review queue, golden answers)
+      - backend-cache:/app/cache
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quality-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  backend-cache:
+    name: quality-assistant-cache

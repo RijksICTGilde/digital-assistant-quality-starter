@@ -144,6 +144,39 @@ rag:
 
 The assistant only answers questions based on the RAG knowledge base (320 government documents about digital transformation, AI, regulations). Off-topic questions receive a polite refusal explaining what topics it can help with.
 
+## Docker
+
+Run the entire stack (frontend + backend) with Docker Compose:
+
+```bash
+cd "3. Platform"
+
+# Copy and configure environment
+cp .env.example .env
+# Edit .env and set your GREENPT_API_KEY
+
+# Build and start
+docker compose up --build
+
+# Access:
+# - Frontend: http://localhost:3000
+# - Backend API: http://localhost:8080/api/health
+```
+
+The first startup takes longer as it builds embeddings for 320 documents. Subsequent starts use the cached vector store.
+
+To run only the backend:
+
+```bash
+cd "3. Platform/spring-backend"
+docker build -t quality-backend .
+docker run -p 8080:8080 \
+  -e GREENPT_API_KEY=your-key \
+  -v "$(pwd)/../../1. Datasets/Scrapen/scraped_content/content:/data/content:ro" \
+  -e DOCUMENTS_PATH=/data/content \
+  quality-backend
+```
+
 ## Tech Stack
 
 - **Spring Boot 3.5.6**
@@ -151,3 +184,4 @@ The assistant only answers questions based on the RAG knowledge base (320 govern
 - **Spring AI 1.1.1** (vector store, embeddings)
 - **GreenPT API** (EU-hosted, privacy-focused LLM)
 - **Kotlin**
+- **Docker** (multi-stage builds, Debian-based for glibc/ONNX compatibility)

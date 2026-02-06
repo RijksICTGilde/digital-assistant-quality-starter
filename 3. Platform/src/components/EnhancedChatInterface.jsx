@@ -379,9 +379,30 @@ Als het probleem aanhoudt, neem contact op met support.`,
     return (
       <div className="space-y-4">
         {/* Main Content */}
-        <div className="prose prose-sm max-w-none">
-          <ReactMarkdown>{message.content}</ReactMarkdown>
-        </div>
+        {message.answerBefore ? (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-chatbot-neutral-200 bg-white p-3">
+              <div className="text-xs font-semibold text-chatbot-neutral-500 mb-2">
+                Eerste versie (concept)
+              </div>
+              <div className="prose prose-sm max-w-none">
+                <ReactMarkdown>{message.answerBefore}</ReactMarkdown>
+              </div>
+            </div>
+            <div className="rounded-lg border border-chatbot-neutral-200 bg-white p-3">
+              <div className="text-xs font-semibold text-chatbot-neutral-500 mb-2">
+                Verbeterde versie (definitief)
+              </div>
+              <div className="prose prose-sm max-w-none">
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="prose prose-sm max-w-none">
+            <ReactMarkdown>{message.content}</ReactMarkdown>
+          </div>
+        )}
 
         {/* Action Items */}
         {message.actionItems && message.actionItems.length > 0 && (

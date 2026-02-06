@@ -294,8 +294,11 @@ Er ging iets mis met de API verbinding. Dit is een fallback response.
         followUpSuggestions: response.follow_up_suggestions || [],
         needsHumanHelp: response.needs_human_expert || response.needs_human_help || false,
         processingTime: response.processing_time_ms || response.responseTime,
-        triage: response.triage || null
-        evaluation: response.evaluation || {}
+        triage: response.triage || null,
+        evaluation: response.evaluation || {},
+        evaluationBefore: response.evaluation_before || {},
+        refineDecision: response.refine_decision || {},
+        answerBefore: response.answer_before || ''
       }
 
       setMessages(prev => [...prev, aiMessage])
@@ -532,9 +535,24 @@ Als het probleem aanhoudt, neem contact op met support.`,
           </div>
         )}
 
+        {message.evaluationBefore && Object.keys(message.evaluationBefore).length > 0 && (
+          <div className="text-xs text-chatbot-neutral-500">
+            Kwaliteit (voor verbetering):
+            <span className={`ml-1 ${getScoreColor(message.evaluationBefore.relevance)}`}>
+              Relevantie {formatScoreLabel(message.evaluationBefore.relevance)}
+            </span>
+            <span className={`ml-2 ${getScoreColor(message.evaluationBefore.tone)}`}>
+              Toon {formatScoreLabel(message.evaluationBefore.tone)}
+            </span>
+            <span className={`ml-2 ${getScoreColor(message.evaluationBefore.policy_compliance)}`}>
+              Beleidskaders {formatScoreLabel(message.evaluationBefore.policy_compliance)}
+            </span>
+          </div>
+        )}
+
         {message.evaluation && Object.keys(message.evaluation).length > 0 && (
           <div className="text-xs text-chatbot-neutral-500">
-            Kwaliteit:
+            Kwaliteit (na verbetering):
             <span className={`ml-1 ${getScoreColor(message.evaluation.relevance)}`}>
               Relevantie {formatScoreLabel(message.evaluation.relevance)}
             </span>
@@ -550,6 +568,23 @@ Als het probleem aanhoudt, neem contact op met support.`,
         {SHOW_EVAL_DEBUG && message.evaluation && Object.keys(message.evaluation).length > 0 && (
           <div className="rounded-lg border border-chatbot-neutral-200 bg-chatbot-neutral-50 px-3 py-2 text-xs text-chatbot-neutral-600">
             <div className="font-semibold text-chatbot-neutral-700 mb-1">Debug metrics</div>
+            <div className="mb-1">
+              Refined: {message.refineDecision?.should_refine ? 'yes' : 'no'}
+            </div>
+            {message.evaluationBefore && Object.keys(message.evaluationBefore).length > 0 && (
+              <div className="mb-2">
+                <div className="font-semibold text-chatbot-neutral-600">Before</div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <span>Overall: {message.evaluationBefore.overall?.toFixed?.(2) ?? 'n.v.t.'}</span>
+                  <span>Relevantie: {message.evaluationBefore.relevance?.toFixed?.(2) ?? 'n.v.t.'}</span>
+                  <span>Toon: {message.evaluationBefore.tone?.toFixed?.(2) ?? 'n.v.t.'}</span>
+                  <span>Beleidskaders: {message.evaluationBefore.policy_compliance?.toFixed?.(2) ?? 'n.v.t.'}</span>
+                  <span>Groundedness: {message.evaluationBefore.groundedness?.toFixed?.(2) ?? 'n.v.t.'}</span>
+                  <span>Volledigheid: {message.evaluationBefore.completeness?.toFixed?.(2) ?? 'n.v.t.'}</span>
+                </div>
+              </div>
+            )}
+            <div className="font-semibold text-chatbot-neutral-600">After</div>
             <div className="flex flex-wrap gap-x-4 gap-y-1">
               <span>Overall: {message.evaluation.overall?.toFixed?.(2) ?? 'n.v.t.'}</span>
               <span>Relevantie: {message.evaluation.relevance?.toFixed?.(2) ?? 'n.v.t.'}</span>

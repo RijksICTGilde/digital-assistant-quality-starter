@@ -58,6 +58,7 @@ def format_response(state: ChatState) -> dict:
                 "tone": state.get("tone_validation", {}),
                 "output_guardrail": state.get("output_guardrail", {}),
             },
+            "evaluation": state.get("answer_evaluation", {}),
             "triage": state.get("triage", {}),
         }
     }

@@ -20,3 +20,5 @@ langchain-core>=0.3.0
 langgraph>=0.2.0
 mcp>=1.0.0
 sentence-transformers>=2.2.0
+deepeval>=0.20.0
+litellm>=1.0.0

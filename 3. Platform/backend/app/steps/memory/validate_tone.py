@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import json
-
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from loguru import logger
+
+# ── Toggle: set to False to skip this step ──
+ENABLED = False
 
 
 def make_validate_tone_node(llm: ChatOpenAI):
@@ -31,6 +32,10 @@ def make_validate_tone_node(llm: ChatOpenAI):
     """
 
     async def validate_tone(state: dict) -> dict:
+        if not ENABLED:
+            logger.debug("[VALIDATE-TONE] Step disabled, skipping")
+            return {}
+
         assistant_text = state.get("assistant_text", "")
 
         if not assistant_text.strip():
@@ -42,67 +47,66 @@ def make_validate_tone_node(llm: ChatOpenAI):
                 },
             }
 
-        prompt = f"""Beoordeel de toon van dit antwoord van een overheids-AI-assistent.
+        logger.info(f"[VALIDATE-TONE] ▶ Rewriting {len(assistant_text)} chars to B1-niveau")
 
-RICHTLIJNEN:
-- Formeel maar toegankelijk (geen ambtelijk jargon)
-- Behulpzaam zonder betuttelend te zijn
-- Geen afsluitende vragen ("Wil je meer weten?", "Kan ik je ergens mee helpen?")
-- Geen overdreven enthousiasme of emoji's
-- Concreet en zakelijk
+        prompt = f"""Herschrijf het onderstaande antwoord naar B1-niveau (Makkelijker Nederlands).
 
-ANTWOORD:
-{assistant_text[:2000]}
+SCHRIJFWIJZER B1-NIVEAU:
 
-Als de toon correct is, antwoord met:
-{{"appropriate": true, "adjustments": []}}
+Zinsbouw:
+- Houd zinnen kort en bondig (gemiddeld 10-15 woorden).
+- Vermijd complexe samengestelde zinnen.
+- Vermijd de tangconstructie: zet bij elkaar horende woorden (zoals werkwoorden) niet te ver uit elkaar.
 
-Als de toon aangepast moet worden, antwoord met:
-{{"appropriate": false, "adjustments": ["reden1"], "rewritten": "het volledig herschreven antwoord"}}
+Structuur:
+- Gebruik korte alinea's en betekenisvolle tussenkoppen om de tekst scanbaar te maken.
+- Gebruik bullet points of genummerde lijsten voor voorwaarden of opsommingen.
 
-Antwoord ALLEEN met valid JSON."""
+Stijl:
+- Schrijf in de actieve vorm ("U betaalt binnen 14 dagen" in plaats van "De betaling dient binnen 14 dagen te geschieden").
+- Spreek de lezer direct aan met 'u'.
+- Vermijd vakjargon, moeilijke woorden en clichés. Gebruik alledaagse taal.
+- Beperk hulpwerkwoorden zoals 'zullen', 'kunnen', 'moeten', 'zouden'.
+- Vermijd 'er' en 'echter' aan het begin van zinnen.
+- Vermijd overbodige woorden.
+
+Verder:
+- Behoud ALLE feitelijke informatie — laat niets weg.
+- Behoud markdown-opmaak (##, ###, opsommingen).
+- Geen afsluitende vragen ("Wil je meer weten?", "Kan ik u ergens mee helpen?").
+- Antwoord alleen met de herschreven tekst, geen uitleg.
+
+ORIGINEEL ANTWOORD:
+{assistant_text}"""
 
         try:
             response = await llm.ainvoke(
                 [
                     SystemMessage(
-                        content="Je controleert de toon van overheidsantwoorden. "
-                        "Antwoord alleen met JSON."
+                        content="Je herschrijft teksten naar B1-niveau (Makkelijker Nederlands). "
+                        "Geef alleen de herschreven tekst terug, niets anders."
                     ),
                     HumanMessage(content=prompt),
                 ],
-                temperature=0.1,
+                temperature=0.3,
                 max_tokens=2500,
             )
-            raw = (response.content or "{}").strip()
-            if raw.startswith("```"):
-                raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            rewritten = (response.content or "").strip()
+            if not rewritten:
+                logger.warning("[VALIDATE-TONE] Empty rewrite, keeping original")
+                return {"tone_validation": {"appropriate": True, "original_text": None, "adjustments": []}}
 
-            data = json.loads(raw)
-            appropriate = data.get("appropriate", True)
-            adjustments = data.get("adjustments", [])
-
-            if not appropriate and data.get("rewritten", "").strip():
-                logger.info(f"[VALIDATE-TONE] Rewriting ({len(adjustments)} adjustments)")
-                return {
-                    "assistant_text": data["rewritten"],
-                    "tone_validation": {
-                        "appropriate": False,
-                        "original_text": assistant_text,
-                        "adjustments": adjustments,
-                    },
-                }
-
-            result = {
-                "appropriate": appropriate,
-                "original_text": None,
-                "adjustments": adjustments,
+            logger.info(f"[VALIDATE-TONE] ✓ Rewritten to B1: {len(assistant_text)} → {len(rewritten)} chars")
+            return {
+                "assistant_text": rewritten,
+                "tone_validation": {
+                    "appropriate": False,
+                    "original_text": assistant_text,
+                    "adjustments": ["Herschreven naar B1-niveau"],
+                },
             }
         except Exception as e:
-            logger.warning(f"[VALIDATE-TONE] Validation failed: {e}")
-            result = {"appropriate": True, "original_text": None, "adjustments": []}
-
-        logger.info(f"[VALIDATE-TONE] appropriate={result['appropriate']}")
-        return {"tone_validation": result}
+            logger.warning(f"[VALIDATE-TONE] Rewrite failed: {e}, keeping original")
+            return {"tone_validation": {"appropriate": True, "original_text": None, "adjustments": []}}
 
     return validate_tone

@@ -17,6 +17,7 @@ Tools:
 1. search_knowledge_base(query: str) – Search 350+ government documents for facts.
 2. retrieve_past_answer(exchange_id: str) – Get full text of a previous answer.
 3. lookup_past_conversation(topic: str) – Search past Q&A by topic keyword.
+4. get_conversation_summary() – Get overview of this conversation (no arguments).
 
 If you do NOT need a tool, just answer directly (no JSON).
 """
@@ -35,7 +36,7 @@ def create_tools(enhanced_rag: Any, session_getter, captured_sources: list):
 
     @tool
     def search_knowledge_base(query: str) -> str:
-        """Search the RAG knowledge base of 350+ government documents. Use this when the user asks a factual question about regulations, guidelines, or best practices."""
+        """Search the RAG knowledge base of 350+ government documents. Use this when the user asks a factual question about regulations, guidelines, or best practices. Include both the topic and the user's intent in your search query."""
         logger.info(f"[RAG-SEARCH] query='{query}'")
         results = enhanced_rag.search_documents(query, max_results=3)
         logger.info(f"[RAG-SEARCH] Found {len(results)} results")
@@ -110,13 +111,39 @@ def create_tools(enhanced_rag: Any, session_getter, captured_sources: list):
         return text
 
     @tool
+    def get_conversation_summary() -> str:
+        """Get a summary of the current conversation. Use this when the user asks for an overview or summary of what has been discussed in THIS chat session. Do NOT use this for questions about external topics."""
+        logger.info("[TOOL:get_conversation_summary] ▶ Retrieving conversation summary")
+        session = session_getter()
+        qa_index = session.get("qa_index", [])
+        summary = session.get("summary", "")
+
+        if not qa_index and not summary:
+            return "Dit gesprek is net gestart. Er zijn nog geen eerdere vragen en antwoorden."
+
+        result_parts = []
+        if summary:
+            result_parts.append(f"## Sessie-samenvatting\n{summary}")
+        if qa_index:
+            result_parts.append(f"\n## Alle {len(qa_index)} vragen in dit gesprek:")
+            for entry in qa_index:
+                result_parts.append(
+                    f"- [{entry.get('exchange_id', '')}] "
+                    f"Vraag: {entry.get('question_summary', '')} → "
+                    f"Antwoord: {entry.get('answer_summary', '')}"
+                )
+        logger.info(f"[TOOL:get_conversation_summary] ✓ Returning {len(qa_index)} entries")
+        return "\n".join(result_parts)
+
+    @tool
     def lookup_past_conversation(topic: str) -> str:
-        """Search the Q&A index of this conversation by topic. Use when the user asks about something discussed earlier in the session, including questions about sources or URLs of previous answers."""
+        """Search the Q&A index of this conversation by topic keyword. Use when the user refers to something specific discussed earlier, like 'wat zei je over de WOO?' or 'welke bronnen gebruikte je voor het antwoord over X?'."""
         logger.info(f"[TOOL:lookup_past_conversation] ▶ topic='{topic}'")
         session = session_getter()
         qa_index = session.get("qa_index", [])
         full_answers = session.get("full_answers", {})
         topic_lower = topic.lower()
+
         matches = []
         for entry in qa_index:
             entry_text = f"{entry.get('question_summary', '')} {entry.get('answer_summary', '')} {' '.join(entry.get('topics', []))}".lower()
@@ -162,7 +189,7 @@ def create_tools(enhanced_rag: Any, session_getter, captured_sources: list):
         logger.info(f"[TOOL:lookup_past_conversation] ✗ no matches for '{topic}'")
         return f"No past exchanges found matching topic '{topic}'."
 
-    return [search_knowledge_base, retrieve_past_answer, lookup_past_conversation]
+    return [search_knowledge_base, retrieve_past_answer, lookup_past_conversation, get_conversation_summary]
 
 
 def make_execute_tools_node(tools: list, captured_sources: list):

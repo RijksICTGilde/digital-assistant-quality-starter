@@ -120,6 +120,20 @@ const getConfidenceColor = (confidence) => {
   return confidence === 'high' ? 'text-chatbot-primary' : confidence === 'medium' ? 'text-chatbot-secondary' : 'text-chatbot-neutral-600'
 }
 
+const SHOW_EVAL_DEBUG = import.meta.env.VITE_SHOW_EVAL_DEBUG === 'true'
+
+const formatScoreLabel = (score) => {
+  if (typeof score !== 'number') return 'n.v.t.'
+  if (score >= 0.8) return 'Hoog'
+  if (score >= 0.5) return 'Gemiddeld'
+  return 'Laag'
+}
+
+const getScoreColor = (score) => {
+  if (typeof score !== 'number') return 'text-chatbot-neutral-500'
+  return score >= 0.8 ? 'text-chatbot-primary' : score >= 0.5 ? 'text-chatbot-secondary' : 'text-chatbot-neutral-600'
+}
+
 const getRiskLevelColor = (level) => {
   return level === 'high' ? 'text-chatbot-neutral-700' : level === 'medium' ? 'text-chatbot-secondary' : 'text-chatbot-primary'
 }
@@ -149,7 +163,10 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(true)
   const [viewingDocument, setViewingDocument] = useState(null)
-  const [sessionId, setSessionId] = useState(null)
+  const [sessionId, setSessionId] = useState(() => {
+    // Restore session from sessionStorage on mount
+    return sessionStorage.getItem('kletsmajoor_session_id') || null
+  })
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -160,6 +177,13 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Sync sessionId to sessionStorage whenever it changes
+  useEffect(() => {
+    if (sessionId) {
+      sessionStorage.setItem('kletsmajoor_session_id', sessionId)
+    }
+  }, [sessionId])
 
   useEffect(() => {
     // Welcome message with enhanced context
@@ -181,6 +205,7 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
       } catch (_) { /* session may already be gone */ }
     }
     setSessionId(null)
+    sessionStorage.removeItem('kletsmajoor_session_id')
     setMessages([{
       id: Date.now(),
       type: 'ai',
@@ -270,6 +295,7 @@ Er ging iets mis met de API verbinding. Dit is een fallback response.
         needsHumanHelp: response.needs_human_expert || response.needs_human_help || false,
         processingTime: response.processing_time_ms || response.responseTime,
         triage: response.triage || null
+        evaluation: response.evaluation || {}
       }
 
       setMessages(prev => [...prev, aiMessage])
@@ -506,6 +532,42 @@ Als het probleem aanhoudt, neem contact op met support.`,
           </div>
         )}
 
+        {message.evaluation && Object.keys(message.evaluation).length > 0 && (
+          <div className="text-xs text-chatbot-neutral-500">
+            Kwaliteit:
+            <span className={`ml-1 ${getScoreColor(message.evaluation.relevance)}`}>
+              Relevantie {formatScoreLabel(message.evaluation.relevance)}
+            </span>
+            <span className={`ml-2 ${getScoreColor(message.evaluation.tone)}`}>
+              Toon {formatScoreLabel(message.evaluation.tone)}
+            </span>
+            <span className={`ml-2 ${getScoreColor(message.evaluation.policy_compliance)}`}>
+              Beleidskaders {formatScoreLabel(message.evaluation.policy_compliance)}
+            </span>
+          </div>
+        )}
+
+        {SHOW_EVAL_DEBUG && message.evaluation && Object.keys(message.evaluation).length > 0 && (
+          <div className="rounded-lg border border-chatbot-neutral-200 bg-chatbot-neutral-50 px-3 py-2 text-xs text-chatbot-neutral-600">
+            <div className="font-semibold text-chatbot-neutral-700 mb-1">Debug metrics</div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              <span>Overall: {message.evaluation.overall?.toFixed?.(2) ?? 'n.v.t.'}</span>
+              <span>Relevantie: {message.evaluation.relevance?.toFixed?.(2) ?? 'n.v.t.'}</span>
+              <span>Toon: {message.evaluation.tone?.toFixed?.(2) ?? 'n.v.t.'}</span>
+              <span>Beleidskaders: {message.evaluation.policy_compliance?.toFixed?.(2) ?? 'n.v.t.'}</span>
+              <span>Groundedness: {message.evaluation.groundedness?.toFixed?.(2) ?? 'n.v.t.'}</span>
+              <span>Volledigheid: {message.evaluation.completeness?.toFixed?.(2) ?? 'n.v.t.'}</span>
+            </div>
+            {Array.isArray(message.evaluation.notes) && message.evaluation.notes.length > 0 && (
+              <div className="mt-2 text-chatbot-neutral-500 space-y-1">
+                {message.evaluation.notes.map((note, index) => (
+                  <div key={index}>• {note}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Message Metadata */}
         <div className="flex items-center justify-between text-xs text-chatbot-neutral-400 border-t border-chatbot-neutral-100 pt-2">
           <div className="flex items-center space-x-3">
@@ -709,6 +771,19 @@ Als het probleem aanhoudt, neem contact op met support.`,
             <span>🔍 Enhanced RAG: 320 documenten, 2300+ chunks</span>
             <span>📋 OpenAI Embeddings</span>
             <span>⚖️ RegelRecht: automatisch voor toeslagen & wetgeving</span>
+            {sessionId && (
+              <span
+                className="font-mono cursor-pointer hover:text-chatbot-primary"
+                title={`Session: ${sessionId}\nKlik om te kopiëren`}
+                onClick={() => {
+                  navigator.clipboard.writeText(sessionId)
+                  // Brief visual feedback could be added here
+                }}
+              >
+                🗂️ {sessionId.substring(0, 8)}...
+              </span>
+            )}
+            {!sessionId && <span className="text-chatbot-neutral-400">🗂️ Geen sessie</span>}
           </div>
           <span>{inputValue.length}/2000</span>
         </div>

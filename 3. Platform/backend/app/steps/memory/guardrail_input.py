@@ -6,6 +6,9 @@ from loguru import logger
 
 from app.steps.memory._triage import _default_triage
 
+# ── Toggle: set to False to skip this step ──
+ENABLED = True
+
 
 def make_guardrail_input_node():
     """Factory: checks whether the user message is allowed to be processed.
@@ -34,6 +37,10 @@ def make_guardrail_input_node():
     """
 
     async def guardrail_input(state: dict) -> dict:
+        if not ENABLED:
+            logger.debug("[GUARDRAIL-INPUT] Step disabled, skipping")
+            return {}
+
         triage = dict(state.get("triage") or _default_triage())
         message = state.get("message", "")
 

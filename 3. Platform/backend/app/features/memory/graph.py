@@ -8,6 +8,8 @@ from typing import Any, Dict, List
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 
+from loguru import logger
+
 from app.features.memory.session_store import SessionStore
 from app.features.memory.tools import create_tools, make_execute_tools_node
 from app.steps.memory import (
@@ -29,6 +31,7 @@ from app.steps.memory import (
     make_triage_mcp_node,
     make_triage_relevance_node,
     make_update_memory,
+    make_evaluate_answer_node,
     make_validate_sources_node,
     make_validate_tone_node,
     should_call_llm,
@@ -63,7 +66,11 @@ def build_chat_graph(
         return _state_ref.get("session", {})
 
     tools = create_tools(enhanced_rag, session_getter, _captured_sources)
+    logger.info(f"[GRAPH:init] Created {len(tools)} tools for LLM:")
+    for t in tools:
+        logger.info(f"  - {t.name}: {t.description[:80]}...")
     llm_with_tools = llm.bind_tools(tools)
+    logger.info("[GRAPH:init] Tools bound to LLM (tool calling enabled)")
 
     # Build node functions
     load_session = make_load_session(session_store)
@@ -74,6 +81,7 @@ def build_chat_graph(
     triage_intent = make_triage_intent_node()
     call_llm = make_call_llm(llm_with_tools)
     execute_tools = make_execute_tools_node(tools, _captured_sources)
+    evaluate_answer = make_evaluate_answer_node(llm)
     validate_sources = make_validate_sources_node(llm)
     validate_tone = make_validate_tone_node(llm)
     guardrail_output = make_guardrail_output_node()
@@ -112,6 +120,7 @@ def build_chat_graph(
     graph.add_node("call_llm", call_llm_with_sync)
     graph.add_node("execute_tools", execute_tools)
     graph.add_node("bundle_sources", bundle_sources)
+    graph.add_node("evaluate_answer", evaluate_answer)
     graph.add_node("validate_sources", validate_sources)
     graph.add_node("validate_tone", validate_tone)
     graph.add_node("guardrail_output", guardrail_output)
@@ -146,7 +155,8 @@ def build_chat_graph(
         "bundle_sources": "bundle_sources",
     })
     graph.add_edge("execute_tools", "call_llm")
-    graph.add_edge("bundle_sources", "validate_sources")
+    graph.add_edge("bundle_sources", "evaluate_answer")
+    graph.add_edge("evaluate_answer", "validate_sources")
     graph.add_edge("validate_sources", "validate_tone")
 
     # ── Output guardrail (both paths converge here) ─────────────

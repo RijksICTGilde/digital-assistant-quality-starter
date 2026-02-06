@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from loguru import logger
 
+# ── Toggle: set to False to skip this step ──
+ENABLED = True
+
 
 def make_guardrail_output_node():
     """Factory: checks whether the assistant response is safe to deliver.
@@ -35,6 +38,10 @@ def make_guardrail_output_node():
     """
 
     async def guardrail_output(state: dict) -> dict:
+        if not ENABLED:
+            logger.debug("[GUARDRAIL-OUTPUT] Step disabled, skipping")
+            return {}
+
         assistant_text = state.get("assistant_text", "")
 
         # ── PLACEHOLDER: replace with your output guardrail logic ───

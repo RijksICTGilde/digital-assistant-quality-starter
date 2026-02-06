@@ -571,6 +571,22 @@ Als het probleem aanhoudt, neem contact op met support.`,
             <div className="mb-1">
               Refined: {message.refineDecision?.should_refine ? 'yes' : 'no'}
             </div>
+            {message.answerBefore && (
+              <div className="mb-2">
+                <div className="font-semibold text-chatbot-neutral-600">Answer (before)</div>
+                <div className="whitespace-pre-wrap text-chatbot-neutral-500">
+                  {message.answerBefore}
+                </div>
+              </div>
+            )}
+            {message.content && (
+              <div className="mb-2">
+                <div className="font-semibold text-chatbot-neutral-600">Answer (after)</div>
+                <div className="whitespace-pre-wrap text-chatbot-neutral-500">
+                  {message.content}
+                </div>
+              </div>
+            )}
             {message.evaluationBefore && Object.keys(message.evaluationBefore).length > 0 && (
               <div className="mb-2">
                 <div className="font-semibold text-chatbot-neutral-600">Before</div>

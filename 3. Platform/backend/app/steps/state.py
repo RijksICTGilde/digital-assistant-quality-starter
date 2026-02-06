@@ -56,6 +56,7 @@ class ChatState(TypedDict, total=False):
     answer_evaluation_before: dict  # evaluation snapshot before refinement
     refine_decision: dict     # {should_refine, reasons, thresholds, scores_used}
     refined_once: bool
+    answer_before: str
 
     # --- Internal: track tool rounds ---
     tool_rounds: int

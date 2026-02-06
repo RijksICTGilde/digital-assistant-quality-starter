@@ -61,6 +61,7 @@ def format_response(state: ChatState) -> dict:
             "evaluation": state.get("answer_evaluation", {}),
             "evaluation_before": state.get("answer_evaluation_before", {}),
             "refine_decision": state.get("refine_decision", {}),
+            "answer_before": state.get("answer_before", ""),
             "triage": state.get("triage", {}),
         }
     }

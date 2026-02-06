@@ -18,6 +18,7 @@ from app.steps.memory import (
     format_response,
     make_call_llm,
     make_call_mcp_node,
+    make_format_mcp_node,
     make_guardrail_input_node,
     make_guardrail_output_node,
     make_load_session,
@@ -76,7 +77,8 @@ def build_chat_graph(
     validate_tone = make_validate_tone_node(llm)
     guardrail_output = make_guardrail_output_node()
     mcp_tool_name = os.getenv("MCP_TOOL_NAME") or None
-    call_mcp = make_call_mcp_node(mcp_tool_name)
+    call_mcp = make_call_mcp_node(mcp_tool_name=mcp_tool_name)
+    format_mcp = make_format_mcp_node(llm)
     update_memory = make_update_memory(llm)
     save_session = make_save_session(session_store)
 
@@ -115,6 +117,7 @@ def build_chat_graph(
     graph.add_node("save_session", save_session)
     graph.add_node("format_response", format_response)
     graph.add_node("call_mcp", call_mcp)
+    graph.add_node("format_mcp", format_mcp)
 
     # Edges
     graph.add_edge(START, "load_session")
@@ -152,8 +155,9 @@ def build_chat_graph(
         "format_response": "format_response",
     })
 
-    # ── MCP bypasses validators, goes straight to memory/response ─
-    graph.add_conditional_edges("call_mcp", should_update_memory, {
+    # ── MCP: fetch data → format with LLM → memory/response ─
+    graph.add_edge("call_mcp", "format_mcp")
+    graph.add_conditional_edges("format_mcp", should_update_memory, {
         "update_memory": "update_memory",
         "format_response": "format_response",
     })

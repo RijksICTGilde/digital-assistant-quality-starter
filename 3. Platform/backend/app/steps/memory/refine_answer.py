@@ -32,7 +32,7 @@ def make_refine_answer_node(llm: ChatOpenAI):
         evaluation = state.get("answer_evaluation", {})
         sources_block = _build_sources_block(state.get("unique_sources", []))
 
-        logger.info("[REFINE] Triggered with %d reason(s)", len(reasons))
+        logger.info(f"[REFINE] Triggered with {len(reasons)} reason(s)")
         answer_before = assistant_text
 
         prompt = f"""Je bent een kwaliteitsassistent voor de overheid.
@@ -80,7 +80,7 @@ Geef alleen het verbeterde antwoord terug.
             new_text = (response.content or "").strip()
             if not new_text:
                 return {"refined_once": True, "answer_before": answer_before}
-            logger.info("[REFINE] Updated answer (%d chars)", len(new_text))
+            logger.info(f"[REFINE] Updated answer ({len(new_text)} chars)")
             return {
                 "assistant_text": new_text,
                 "refined_once": True,

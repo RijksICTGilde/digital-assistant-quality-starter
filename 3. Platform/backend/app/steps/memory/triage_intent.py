@@ -6,6 +6,9 @@ from loguru import logger
 
 from app.steps.memory._triage import _default_triage, _triage_already_decided
 
+# ── Toggle: set to False to skip this step ──
+ENABLED = True
+
 
 def make_triage_intent_node():
     """Factory: classifies the user's intent and makes a final routing decision.
@@ -26,6 +29,10 @@ def make_triage_intent_node():
     """
 
     async def triage_intent(state: dict) -> dict:
+        if not ENABLED:
+            logger.debug("[TRIAGE-INTENT] Step disabled, skipping")
+            return {}
+
         if _triage_already_decided(state):
             return {}
 

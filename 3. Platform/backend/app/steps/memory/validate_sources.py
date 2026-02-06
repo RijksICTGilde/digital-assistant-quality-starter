@@ -8,6 +8,9 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from loguru import logger
 
+# ── Toggle: set to False to skip this step ──
+ENABLED = True
+
 
 def make_validate_sources_node(llm: ChatOpenAI):
     """Factory: creates a node that validates the answer against sources.
@@ -32,6 +35,10 @@ def make_validate_sources_node(llm: ChatOpenAI):
     """
 
     async def validate_sources(state: dict) -> dict:
+        if not ENABLED:
+            logger.debug("[VALIDATE-SOURCES] Step disabled, skipping")
+            return {}
+
         assistant_text = state.get("assistant_text", "")
         unique_sources = state.get("unique_sources", [])
 

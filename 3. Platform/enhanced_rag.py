@@ -52,8 +52,8 @@ def get_local_embedding_model():
         _local_model = SentenceTransformer(LOCAL_EMBEDDING_MODEL)
         print(f"Model loaded. Embedding dimension: {_local_model.get_sentence_embedding_dimension()}")
     return _local_model
-CHUNK_SIZE = 800  # Tokens per chunk
-CHUNK_OVERLAP = 100  # Token overlap between chunks
+CHUNK_SIZE = 1500  # Tokens per chunk
+CHUNK_OVERLAP = 250  # Token overlap between chunks
 MAX_TOKENS_PER_DOCUMENT = 8000  # Stay within model limits
 
 @dataclass
@@ -125,7 +125,7 @@ class EnhancedRAGSystem:
         """Cache filename based on model and dimensions so different configs don't collide"""
         model_name = LOCAL_EMBEDDING_MODEL if USE_LOCAL_EMBEDDINGS else EMBEDDING_MODEL
         model_safe = model_name.replace("/", "_").replace("\\", "_")
-        return f"embeddings_{model_safe}_{EMBEDDING_DIMENSIONS}.pkl"
+        return f"embeddings_{model_safe}_{EMBEDDING_DIMENSIONS}_chunk{CHUNK_SIZE}.pkl"
 
     def _initialize_system(self):
         """Initialize the RAG system by loading or creating embeddings"""

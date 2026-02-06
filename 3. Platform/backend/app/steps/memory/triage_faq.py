@@ -6,6 +6,9 @@ from loguru import logger
 
 from app.steps.memory._triage import _default_triage, _triage_already_decided
 
+# ── Toggle: set to False to skip this step ──
+ENABLED = True
+
 
 def make_triage_faq_node():
     """Factory: checks whether the question matches a known FAQ entry.
@@ -31,6 +34,10 @@ def make_triage_faq_node():
     # }
 
     async def triage_faq(state: dict) -> dict:
+        if not ENABLED:
+            logger.debug("[TRIAGE-FAQ] Step disabled, skipping")
+            return {}
+
         if _triage_already_decided(state):
             return {}
 

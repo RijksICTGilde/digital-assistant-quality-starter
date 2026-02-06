@@ -8,6 +8,8 @@ from typing import Any, Dict, List
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 
+from loguru import logger
+
 from app.features.memory.session_store import SessionStore
 from app.features.memory.tools import create_tools, make_execute_tools_node
 from app.steps.memory import (
@@ -51,7 +53,11 @@ def build_chat_graph(llm: ChatOpenAI, enhanced_rag: Any, session_store: SessionS
         return _state_ref.get("session", {})
 
     tools = create_tools(enhanced_rag, session_getter, _captured_sources)
+    logger.info(f"[GRAPH:init] Created {len(tools)} tools for LLM:")
+    for t in tools:
+        logger.info(f"  - {t.name}: {t.description[:80]}...")
     llm_with_tools = llm.bind_tools(tools)
+    logger.info("[GRAPH:init] Tools bound to LLM (tool calling enabled)")
 
     # Build node functions
     load_session = make_load_session(session_store)

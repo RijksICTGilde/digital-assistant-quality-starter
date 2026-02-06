@@ -6,6 +6,9 @@ from loguru import logger
 
 from app.steps.memory._triage import _default_triage, _triage_already_decided
 
+# ── Toggle: set to False to skip this step ──
+ENABLED = True
+
 
 def make_triage_relevance_node():
     """Factory: checks whether the user message is relevant to the domain.
@@ -26,6 +29,10 @@ def make_triage_relevance_node():
     """
 
     async def triage_relevance(state: dict) -> dict:
+        if not ENABLED:
+            logger.debug("[TRIAGE-RELEVANCE] Step disabled, skipping")
+            return {}
+
         if _triage_already_decided(state):
             return {}
 

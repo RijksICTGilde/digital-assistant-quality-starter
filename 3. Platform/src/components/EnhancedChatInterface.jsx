@@ -161,7 +161,10 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(true)
   const [viewingDocument, setViewingDocument] = useState(null)
-  const [sessionId, setSessionId] = useState(null)
+  const [sessionId, setSessionId] = useState(() => {
+    // Restore session from sessionStorage on mount
+    return sessionStorage.getItem('kletsmajoor_session_id') || null
+  })
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -172,6 +175,13 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Sync sessionId to sessionStorage whenever it changes
+  useEffect(() => {
+    if (sessionId) {
+      sessionStorage.setItem('kletsmajoor_session_id', sessionId)
+    }
+  }, [sessionId])
 
   useEffect(() => {
     // Welcome message with enhanced context
@@ -193,6 +203,7 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
       } catch (_) { /* session may already be gone */ }
     }
     setSessionId(null)
+    sessionStorage.removeItem('kletsmajoor_session_id')
     setMessages([{
       id: Date.now(),
       type: 'ai',
@@ -742,7 +753,19 @@ Als het probleem aanhoudt, neem contact op met support.`,
           <div className="flex items-center space-x-4">
             <span>🔍 Enhanced RAG: 320 documenten, 2300+ chunks</span>
             <span>📋 OpenAI Embeddings</span>
-            <span>🤖 Enhanced AI</span>
+            {sessionId && (
+              <span
+                className="font-mono cursor-pointer hover:text-chatbot-primary"
+                title={`Session: ${sessionId}\nKlik om te kopiëren`}
+                onClick={() => {
+                  navigator.clipboard.writeText(sessionId)
+                  // Brief visual feedback could be added here
+                }}
+              >
+                🗂️ {sessionId.substring(0, 8)}...
+              </span>
+            )}
+            {!sessionId && <span className="text-chatbot-neutral-400">🗂️ Geen sessie</span>}
           </div>
           <span>{inputValue.length}/2000</span>
         </div>

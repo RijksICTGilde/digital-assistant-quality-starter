@@ -245,13 +245,11 @@ Stel gerust je vraag - ik kletsmaai er graag over! 🍪`,
         .replace(/^[\s\n]*/, '') // Remove leading whitespace
         .trim()
       
-      // Store session ID from first response
-      if (response.session_id && !sessionId) {
-        console.log('[SESSION] New session created:', response.session_id)
+      // Always sync session ID from backend (handles stale/missing sessions)
+      if (response.session_id && response.session_id !== sessionId) {
+        console.log('[SESSION] Session ID updated:', response.session_id)
         setSessionId(response.session_id)
         sessionStorage.setItem('kletsmajoor_session_id', response.session_id)
-      } else {
-        console.log('[SESSION] Reusing existing session:', response.session_id)
       }
 
       const aiMessage = {

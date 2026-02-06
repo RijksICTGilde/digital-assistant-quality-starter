@@ -363,6 +363,136 @@ Response:
 
 ---
 
+## 14. Human-in-the-Loop Review Queue
+
+**Probleem:** Niet alle kwaliteitsproblemen kunnen automatisch opgelost worden. Sommige antwoorden hebben menselijke controle nodig.
+
+**Oplossing:** Automatische flagging en review workflow:
+
+**Automatische triggers:**
+| Trigger | Reden | Actie |
+|---------|-------|-------|
+| Hallucinatie gedetecteerd | `HALLUCINATION` | Direct geflagged |
+| Lage confidence | `LOW_CONFIDENCE` | Review nodig |
+| Expert nodig | `EXPERT_REQUIRED` | Specialist controle |
+| Kwaliteit onder drempel na verbetering | `LOW_CONFIDENCE` | Menselijke correctie |
+
+**Review acties:**
+- **Goedkeuren** - Antwoord is acceptabel ondanks flagging
+- **Afwijzen** - Antwoord mag niet gebruikt worden
+- **Corrigeren** - Handmatig correct antwoord invoeren
+
+**UI:**
+- Teller in admin tab toont aantal wachtende reviews
+- Uitklapbare details met vraag, antwoord en kwaliteitsscores
+- Notities toevoegen bij review beslissing
+
+**Voordeel:** Menselijke oversight voor edge cases. Systematische verbetering van kwaliteit door correcties.
+
+---
+
+## 15. Golden Answers Database
+
+**Probleem:** Gecorrigeerde antwoorden gaan verloren. Dezelfde fouten kunnen opnieuw gemaakt worden.
+
+**Oplossing:** Opbouwen van een database met geverifieerde antwoorden:
+
+**Bronnen:**
+- **Handmatig toegevoegd** - Vraag-antwoord paren door beheerders
+- **Geïmporteerd uit review** - Gecorrigeerde of goedgekeurde antwoorden
+
+**Functionaliteit:**
+1. Import knop bij gecorrigeerde/goedgekeurde reviews
+2. Automatische categorisatie (GDPR, AI Act, WOO, Technisch, Algemeen)
+3. Activeren/deactiveren van golden answers
+4. Regressietest om te controleren of AI nog steeds vergelijkbare antwoorden geeft
+
+**Regressietest:**
+```bash
+POST /api/admin/golden/test
+
+Response:
+{
+  "total_tests": 5,
+  "passed": 4,
+  "failed": 1,
+  "pass_rate": 0.8,
+  "results": [...]
+}
+```
+
+**Voordeel:** Continue kwaliteitsverbetering. Golden answers kunnen gebruikt worden voor few-shot prompting of als RAG context.
+
+---
+
+## 16. Dynamische Kwaliteitsdrempels
+
+**Probleem:** Vaste drempelwaarden zijn niet voor elke situatie geschikt.
+
+**Oplossing:** Admin dashboard om drempels aan te passen tijdens runtime:
+
+**Configureerbare instellingen:**
+- Kwaliteitsdrempels per dimensie (0-100%)
+- RAG instellingen (max bronnen, similarity threshold)
+- Maximum verbeterrondes
+- Regressietest drempel
+
+**Audit log:**
+- Alle configuratiewijzigingen worden gelogd
+- Timestamp en oude/nieuwe waarde
+- Terug te vinden in Config tab
+
+**Reset naar defaults:**
+- Eén knop om alle instellingen terug te zetten
+
+**Voordeel:** Beheerders kunnen kwaliteitseisen aanpassen zonder code te wijzigen. Volledige traceerbaarheid van wijzigingen.
+
+---
+
+## 17. Admin Dashboard met Tabbladen
+
+**Probleem:** Admin functionaliteit verspreid en onoverzichtelijk.
+
+**Oplossing:** Georganiseerd dashboard met 4 tabs:
+
+| Tab | Functionaliteit |
+|-----|-----------------|
+| **Overzicht** | Systeemstatus, statistieken, huidige instellingen |
+| **Configuratie** | Drempels aanpassen, RAG config, audit log |
+| **Kwaliteitsbewaking** | Review queue, golden answers |
+| **Analytics** | Feedback trends, kwaliteitsscores, recente negatieve feedback |
+
+**Features:**
+- Badge op Kwaliteitsbewaking tab toont aantal wachtende reviews
+- Refresh knoppen per sectie
+- Live updates na wijzigingen (bijv. golden answers na import)
+
+**Voordeel:** Centrale plek voor kwaliteitsbeheer. Duidelijke scheiding van taken.
+
+---
+
+## 18. Feedback Analytics
+
+**Probleem:** Geen inzicht in hoe gebruikers de antwoorden beoordelen.
+
+**Oplossing:** Analytics dashboard met feedback statistieken:
+
+**Visualisaties:**
+- Dagelijkse trend grafiek (positief vs negatief)
+- Kwaliteitsscores per dimensie bij positieve vs negatieve feedback
+- Hallucinatie feedback correlatie
+- Recente negatieve feedback met opmerkingen
+
+**Statistieken:**
+- Goedkeuringspercentage
+- Feedback met opmerkingen
+- Per agent type breakdown
+- Verbeterde antwoorden feedback
+
+**Voordeel:** Data-gedreven inzichten voor kwaliteitsverbetering. Identificeren van probleemgebieden.
+
+---
+
 ## Tech Stack
 
 - **Frontend:** React 18 + Vite + Tailwind CSS
@@ -371,3 +501,4 @@ Response:
 - **Vector Store:** Spring AI SimpleVectorStore
 - **LLM:** GreenPT API (EU-hosted, privacy-focused)
 - **Embeddings:** GreenPT `green-embedding` (2560 dimensies)
+- **Caching:** JSON file-based (review queue, golden answers, config)

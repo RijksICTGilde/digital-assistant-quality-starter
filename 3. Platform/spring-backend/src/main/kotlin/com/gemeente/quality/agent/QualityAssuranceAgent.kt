@@ -6,10 +6,11 @@ import com.embabel.agent.api.annotation.Agent
 import com.embabel.agent.api.annotation.Condition
 import com.embabel.agent.api.common.OperationContext
 import com.gemeente.quality.agent.domain.*
-import com.gemeente.quality.config.QualityConfig
 import com.gemeente.quality.model.*
 import com.gemeente.quality.rag.RagSearchService
 import com.gemeente.quality.service.ContextPromptBuilder
+import com.gemeente.quality.service.DynamicConfigService
+import com.gemeente.quality.service.ReviewQueueService
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.LoggerFactory
@@ -26,7 +27,8 @@ import org.slf4j.LoggerFactory
 class QualityAssuranceAgent(
     private val ragSearchService: RagSearchService,
     private val promptBuilder: ContextPromptBuilder,
-    private val qualityConfig: QualityConfig
+    private val dynamicConfig: DynamicConfigService,
+    private val reviewQueueService: ReviewQueueService
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val objectMapper = jacksonObjectMapper()
@@ -59,7 +61,7 @@ class QualityAssuranceAgent(
     @Action(description = "Retrieve relevant documents from the knowledge base for the user's question")
     fun retrieveContext(request: ChatMessage): RagContext {
         logger.info("Retrieving RAG context for: ${request.message.take(80)}...")
-        val sources = ragSearchService.searchDocuments(request.message, 5)
+        val sources = ragSearchService.searchDocuments(request.message, dynamicConfig.getMaxResults())
 
         // Only include sources if they are actually relevant
         if (sources.isEmpty()) {
@@ -166,7 +168,7 @@ class QualityAssuranceAgent(
         ragContext: RagContext,
         context: OperationContext
     ): ImprovedResponse {
-        val maxIterations = qualityConfig.maxImprovementRounds
+        val maxIterations = dynamicConfig.getMaxImprovementRounds()
         val iterationHistory = mutableListOf<IterationResult>()
 
         // Record initial evaluation
@@ -289,7 +291,7 @@ class QualityAssuranceAgent(
         // 1. RAG found relevant documents AND
         // 2. The quality evaluation shows the response is actually relevant (relevance >= threshold)
         val relevanceScore = evaluation.scores[QualityDimension.RELEVANCE] ?: 0.0
-        val relevanceThreshold = qualityConfig.thresholds.relevance
+        val relevanceThreshold = dynamicConfig.getRelevanceThreshold()
         val sourcesAreRelevant = ragContext.hasRelevantSources && relevanceScore >= relevanceThreshold
 
         val sourcesToInclude = if (sourcesAreRelevant) {
@@ -339,7 +341,62 @@ class QualityAssuranceAgent(
             iterationHistory = iterationHistoryForResponse
         )
 
+        // Auto-flag for human review if quality concerns detected
+        autoFlagForReviewIfNeeded(
+            request = request,
+            response = response,
+            evaluation = evaluation,
+            initialResponse = initialResponse
+        )
+
         return QualityAssuredResponse(response = response)
+    }
+
+    /**
+     * Automatically add responses to the review queue when quality concerns are detected.
+     * Triggers on: hallucination, low confidence, or expert required.
+     */
+    private fun autoFlagForReviewIfNeeded(
+        request: ChatMessage,
+        response: StructuredAIResponse,
+        evaluation: QualityEvaluation,
+        initialResponse: InitialResponse
+    ) {
+        try {
+            // Calculate minimum acceptable quality as average of all thresholds
+            val minQualityThreshold = listOf(
+                dynamicConfig.getRelevanceThreshold(),
+                dynamicConfig.getToneThreshold(),
+                dynamicConfig.getCompletenessThreshold(),
+                dynamicConfig.getPolicyComplianceThreshold()
+            ).average()
+
+            val flagReason: FlagReason? = when {
+                evaluation.hallucinationDetected -> FlagReason.HALLUCINATION
+                initialResponse.confidenceLevel == ConfidenceLevel.LOW -> FlagReason.LOW_CONFIDENCE
+                initialResponse.needsHumanExpert -> FlagReason.EXPERT_REQUIRED
+                // Also flag if overall quality is still below threshold after improvement
+                evaluation.scores.values.average() < minQualityThreshold -> FlagReason.LOW_CONFIDENCE
+                else -> null
+            }
+
+            if (flagReason != null) {
+                reviewQueueService.addToQueue(
+                    originalQuestion = request.message,
+                    aiResponse = response.mainAnswer,
+                    flagReason = flagReason,
+                    qualityScores = response.qualityScores,
+                    hallucinationDetected = evaluation.hallucinationDetected,
+                    ungroundedClaims = evaluation.ungroundedClaims.takeIf { it.isNotEmpty() },
+                    confidenceLevel = response.confidenceLevel.value,
+                    agentType = "general"  // This is the QualityAssuranceAgent
+                )
+                logger.info("Auto-flagged response for review: reason=$flagReason")
+            }
+        } catch (e: Exception) {
+            // Don't let flagging errors break the response flow
+            logger.warn("Failed to auto-flag response for review: ${e.message}")
+        }
     }
 
     // --- Helper methods ---
@@ -362,9 +419,11 @@ class QualityAssuranceAgent(
     private fun assessConfidence(sources: List<KnowledgeSource>): ConfidenceLevel {
         if (sources.isEmpty()) return ConfidenceLevel.LOW
         val avgScore = sources.map { it.relevanceScore }.average()
+        // Use similarity threshold as baseline for confidence assessment
+        val baseThreshold = dynamicConfig.getSimilarityThreshold()
         return when {
-            avgScore > 0.7 -> ConfidenceLevel.HIGH
-            avgScore > 0.4 -> ConfidenceLevel.MEDIUM
+            avgScore > baseThreshold + 0.2 -> ConfidenceLevel.HIGH
+            avgScore > baseThreshold -> ConfidenceLevel.MEDIUM
             else -> ConfidenceLevel.LOW
         }
     }
@@ -397,15 +456,25 @@ class QualityAssuranceAgent(
             )
 
             val thresholds = mapOf(
-                QualityDimension.RELEVANCE to qualityConfig.thresholds.relevance,
-                QualityDimension.TONE to qualityConfig.thresholds.tone,
-                QualityDimension.COMPLETENESS to qualityConfig.thresholds.completeness,
-                QualityDimension.POLICY_COMPLIANCE to qualityConfig.thresholds.policyCompliance
+                QualityDimension.RELEVANCE to dynamicConfig.getRelevanceThreshold(),
+                QualityDimension.TONE to dynamicConfig.getToneThreshold(),
+                QualityDimension.COMPLETENESS to dynamicConfig.getCompletenessThreshold(),
+                QualityDimension.POLICY_COMPLIANCE to dynamicConfig.getPolicyComplianceThreshold()
             )
 
+            logger.info("Quality thresholds: ${thresholds.map { "${it.key.name}=${it.value}" }}")
+            logger.info("Quality scores: ${scores.map { "${it.key.name}=${it.value}" }}")
+
             val failedDimensions = scores.filter { (dim, score) ->
-                score < (thresholds[dim] ?: 0.5)
+                val threshold = thresholds[dim] ?: 0.5
+                val failed = score < threshold
+                if (failed) {
+                    logger.info("Dimension ${dim.name} FAILED: score=$score < threshold=$threshold")
+                }
+                failed
             }.keys.toList()
+
+            logger.info("Failed dimensions: $failedDimensions, passed=${failedDimensions.isEmpty()}")
 
             val suggestions = mutableMapOf<QualityDimension, String>()
             tree["improvement_suggestions"]?.let { sugNode ->
@@ -474,10 +543,10 @@ class QualityAssuranceAgent(
 
         evaluation.scores.forEach { (dim, score) ->
             val threshold = when (dim) {
-                QualityDimension.RELEVANCE -> qualityConfig.thresholds.relevance
-                QualityDimension.TONE -> qualityConfig.thresholds.tone
-                QualityDimension.COMPLETENESS -> qualityConfig.thresholds.completeness
-                QualityDimension.POLICY_COMPLIANCE -> qualityConfig.thresholds.policyCompliance
+                QualityDimension.RELEVANCE -> dynamicConfig.getRelevanceThreshold()
+                QualityDimension.TONE -> dynamicConfig.getToneThreshold()
+                QualityDimension.COMPLETENESS -> dynamicConfig.getCompletenessThreshold()
+                QualityDimension.POLICY_COMPLIANCE -> dynamicConfig.getPolicyComplianceThreshold()
             }
             trace.add(QualityTraceEntry(
                 action = "evaluate_quality",

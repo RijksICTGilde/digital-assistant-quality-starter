@@ -1,11 +1,9 @@
 package com.gemeente.quality.controller
 
-import com.embabel.agent.api.invocation.AgentInvocation
-import com.embabel.agent.core.AgentPlatform
 import com.gemeente.quality.agent.AgentRouter
-import com.gemeente.quality.agent.domain.QualityAssuredResponse
 import com.gemeente.quality.model.ChatMessage
 import com.gemeente.quality.model.QualityTraceEntry
+import com.gemeente.quality.service.StreamingQualityService
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.*
@@ -16,14 +14,13 @@ import java.time.Duration
 /**
  * SSE streaming endpoint for real-time quality pipeline progress.
  *
- * This demonstrates Embabel's event streaming capability, allowing the frontend
- * to show live progress as each action completes:
- * "Retrieving context... Generating response... Evaluating quality..."
+ * Uses StreamingQualityService for manual step orchestration,
+ * enabling real-time progress events between each pipeline step.
  */
 @RestController
 @RequestMapping("/api")
 class ChatStreamController(
-    private val agentPlatform: AgentPlatform,
+    private val streamingQualityService: StreamingQualityService,
     private val agentRouter: AgentRouter
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -36,7 +33,7 @@ class ChatStreamController(
      * - action_start: When an action begins (e.g., "retrieveContext")
      * - action_complete: When an action finishes
      * - quality_score: Individual quality dimension scores
-     * - improvement: When response is being improved
+     * - improvement_start: When improvement begins
      * - complete: Final response with all quality data
      * - error: If something goes wrong
      */
@@ -46,72 +43,30 @@ class ChatStreamController(
 
         val sink = Sinks.many().multicast().onBackpressureBuffer<StreamEvent>()
 
-        // Route to appropriate agent
+        // Route to determine agent type (for info only)
         val routing = agentRouter.route(request.message)
 
-        // Start the agent process in a separate thread
+        // Start the pipeline in a separate thread
         Thread {
             try {
                 // Emit start event with routing info
                 sink.tryEmitNext(StreamEvent(
                     type = "pipeline_start",
                     action = "quality_pipeline",
-                    message = "Kwaliteitspijplijn gestart (${routing.agentType.name.lowercase()} agent)",
+                    message = "Kwaliteitspijplijn gestart",
                     data = mapOf("agent" to routing.agentType.name.lowercase())
                 ))
 
-                // Define the pipeline steps
-                val actions = listOf(
-                    "retrieveContext" to "Context ophalen uit kennisbank",
-                    "generateInitialResponse" to "Eerste antwoord genereren",
-                    "evaluateQuality" to "Kwaliteit beoordelen",
-                    "improveResponse" to "Antwoord verbeteren (indien nodig)",
-                    "assembleFinalResponse" to "Eindresultaat samenstellen"
-                )
-
-                // Emit initial action start
-                sink.tryEmitNext(StreamEvent(
-                    type = "action_start",
-                    action = actions[0].first,
-                    message = actions[0].second,
-                    step = 1,
-                    totalSteps = actions.size
-                ))
-
-                // Run the agent
-                val result = AgentInvocation
-                    .builder(agentPlatform)
-                    .build(QualityAssuredResponse::class.java)
-                    .invoke(request)
-
-                // Emit completion events for all steps
-                actions.forEachIndexed { index, (action, message) ->
+                // Execute the streaming pipeline with callback
+                val response = streamingQualityService.executeWithStreaming(request) { type, action, message, step, totalSteps, data ->
+                    logger.debug("Stream event: $type - $action - $message")
                     sink.tryEmitNext(StreamEvent(
-                        type = "action_complete",
+                        type = type,
                         action = action,
-                        message = "$message ✓",
-                        step = index + 1,
-                        totalSteps = actions.size
-                    ))
-                    Thread.sleep(50) // Small delay for visual effect
-                }
-
-                // Emit quality scores
-                result.response.qualityScores?.forEach { (dimension, score) ->
-                    sink.tryEmitNext(StreamEvent(
-                        type = "quality_score",
-                        action = "evaluate_$dimension",
-                        message = "${dimension.replaceFirstChar { c -> c.uppercase() }}: ${(score * 100).toInt()}%",
-                        data = mapOf("dimension" to dimension, "score" to score)
-                    ))
-                }
-
-                // Emit improvement status
-                if (result.response.qualityImproved == true) {
-                    sink.tryEmitNext(StreamEvent(
-                        type = "improvement",
-                        action = "improveResponse",
-                        message = "Antwoord is verbeterd op basis van kwaliteitscontrole"
+                        message = message,
+                        step = step,
+                        totalSteps = totalSteps,
+                        data = data
                     ))
                 }
 
@@ -123,8 +78,8 @@ class ChatStreamController(
                     passed = true,
                     timestampMs = System.currentTimeMillis()
                 )
-                val responseWithRouting = result.response.copy(
-                    qualityTrace = listOf(routingTrace) + (result.response.qualityTrace ?: emptyList())
+                val responseWithRouting = response.copy(
+                    qualityTrace = listOf(routingTrace) + (response.qualityTrace ?: emptyList())
                 )
 
                 // Emit final result
@@ -155,7 +110,7 @@ class ChatStreamController(
  * Event sent via SSE stream during quality pipeline execution.
  */
 data class StreamEvent(
-    val type: String,           // Event type: pipeline_start, action_start, action_complete, quality_score, improvement, complete, error
+    val type: String,           // Event type: pipeline_start, action_start, action_complete, quality_score, improvement_start, complete, error
     val action: String,         // Current action name
     val message: String,        // Human-readable message (Dutch)
     val step: Int? = null,      // Current step number (1-indexed)

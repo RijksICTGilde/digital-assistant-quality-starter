@@ -22,7 +22,7 @@ const WelcomeScreen = ({ onContinue }) => {
             </motion.div>
             
             <h1 className="text-4xl md:text-5xl font-bold text-chatbot-neutral-800 mb-4">
-              Gemeente AI Assistant
+              AI Kwaliteitsassistent
             </h1>
             
             <p className="text-xl text-chatbot-neutral-600 mb-8 leading-relaxed">

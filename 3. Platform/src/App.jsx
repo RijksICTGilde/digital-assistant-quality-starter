@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import ChatbotLanding from './components/ChatbotLanding'
 import OrganizationSelector from './components/OrganizationSelector'
@@ -7,6 +8,7 @@ import ContextGathering from './components/ContextGathering'
 import InfoPages from './components/InfoPages'
 import EnhancedChatInterface from './components/EnhancedChatInterface'
 import LoadingScreen from './components/LoadingScreen'
+import AdminDashboard from './pages/AdminDashboard'
 
 const STEPS = {
   LANDING: 'landing',
@@ -17,7 +19,7 @@ const STEPS = {
   CHAT: 'chat'
 }
 
-function App() {
+function MainApp() {
   const [currentStep, setCurrentStep] = useState(STEPS.LANDING)
   const [userContext, setUserContext] = useState({
     selectedChoice: null,
@@ -203,6 +205,15 @@ function App() {
         </div>
       )}
     </div>
+  )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/*" element={<MainApp />} />
+    </Routes>
   )
 }
 

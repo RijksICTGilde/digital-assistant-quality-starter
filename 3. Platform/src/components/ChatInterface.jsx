@@ -171,7 +171,7 @@ const ChatInterface = ({ userContext, onRestart }) => {
             <div className="flex items-center space-x-2">
               <Bot className="w-6 h-6 text-gemeente-primary" />
               <h1 className="text-xl font-semibold text-gemeente-neutral-800">
-                Gemeente AI Assistant
+                AI Kwaliteitsassistent
               </h1>
             </div>
             <div className="hidden md:flex items-center space-x-2 text-sm text-gemeente-neutral-600">

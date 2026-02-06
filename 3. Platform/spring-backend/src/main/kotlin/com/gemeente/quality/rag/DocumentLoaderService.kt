@@ -26,15 +26,40 @@ class DocumentLoaderService(
     @Volatile
     final var isLoaded: Boolean = false
         private set
+    @Volatile
+    final var loadedFromCache: Boolean = false
+        private set
 
     @PostConstruct
     fun init() {
         val cacheFile = File(ragConfig.cachePath)
+        val statsFile = File(ragConfig.cachePath.replace(".json", "-stats.json"))
+
         if (cacheFile.exists()) {
             try {
                 vectorStore.load(cacheFile)
                 isLoaded = true
-                logger.info("Loaded vector store from cache: ${cacheFile.absolutePath}")
+                loadedFromCache = true
+
+                // Load stats from companion file
+                if (statsFile.exists()) {
+                    try {
+                        val stats = statsFile.readText().split(",")
+                        documentCount = stats.getOrNull(0)?.toIntOrNull() ?: 0
+                        chunkCount = stats.getOrNull(1)?.toIntOrNull() ?: 0
+                    } catch (e: Exception) {
+                        logger.warn("Could not read stats file, estimating from cache size")
+                        // Estimate based on file size (roughly 5KB per chunk)
+                        chunkCount = (cacheFile.length() / 5000).toInt().coerceAtLeast(1)
+                        documentCount = (chunkCount / 10).coerceAtLeast(1)
+                    }
+                } else {
+                    // Estimate based on file size
+                    chunkCount = (cacheFile.length() / 5000).toInt().coerceAtLeast(1)
+                    documentCount = (chunkCount / 10).coerceAtLeast(1)
+                }
+
+                logger.info("Loaded vector store from cache: ${cacheFile.absolutePath} (~$documentCount docs, ~$chunkCount chunks)")
                 return
             } catch (e: Exception) {
                 logger.warn("Failed to load cache, rebuilding: ${e.message}")
@@ -113,6 +138,9 @@ class DocumentLoaderService(
                 logger.error("Batch ${batchIndex + 1} failed: ${e.message}")
                 // Save what we have
                 vectorStore.save(cacheFile)
+                chunkCount = embedded
+                val statsFile = File(ragConfig.cachePath.replace(".json", "-stats.json"))
+                statsFile.writeText("$documentCount,$chunkCount")
                 isLoaded = embedded > 100
                 logger.info("Partial vector store saved with $embedded chunks.")
                 return
@@ -120,6 +148,11 @@ class DocumentLoaderService(
         }
 
         vectorStore.save(cacheFile)
+
+        // Save stats to companion file
+        val statsFile = File(ragConfig.cachePath.replace(".json", "-stats.json"))
+        statsFile.writeText("$documentCount,$chunkCount")
+
         isLoaded = true
         logger.info("Vector store saved to cache. Ready with $documentCount docs, $chunkCount chunks.")
     }

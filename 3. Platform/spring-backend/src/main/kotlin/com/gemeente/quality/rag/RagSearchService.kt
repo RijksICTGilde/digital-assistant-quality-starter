@@ -3,6 +3,7 @@ package com.gemeente.quality.rag
 import com.gemeente.quality.model.KnowledgeSource
 import com.gemeente.quality.model.RegulationType
 import com.gemeente.quality.model.UserRole
+import com.gemeente.quality.service.DynamicConfigService
 import org.slf4j.LoggerFactory
 import org.springframework.ai.document.Document
 import org.springframework.ai.vectorstore.SearchRequest
@@ -12,22 +13,20 @@ import org.springframework.stereotype.Service
 @Service
 class RagSearchService(
     private val vectorStore: SimpleVectorStore,
-    private val documentLoaderService: DocumentLoaderService
+    private val documentLoaderService: DocumentLoaderService,
+    private val dynamicConfig: DynamicConfigService
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    companion object {
-        const val MINIMUM_RELEVANCE_THRESHOLD = 0.5
-    }
-
-    fun searchDocuments(query: String, maxResults: Int = 5): List<KnowledgeSource> {
+    fun searchDocuments(query: String, maxResults: Int? = null): List<KnowledgeSource> {
         if (!documentLoaderService.isLoaded) return emptyList()
 
+        val effectiveMaxResults = maxResults ?: dynamicConfig.getMaxResults()
         val results = vectorStore.similaritySearch(
             SearchRequest.builder()
                 .query(query)
-                .topK(maxResults)
-                .similarityThreshold(MINIMUM_RELEVANCE_THRESHOLD)
+                .topK(effectiveMaxResults)
+                .similarityThreshold(dynamicConfig.getSimilarityThreshold())
                 .build()
         )
         return results.map { doc -> toKnowledgeSource(doc) }
@@ -39,7 +38,7 @@ class RagSearchService(
             SearchRequest.builder()
                 .query(query)
                 .topK(1)
-                .similarityThreshold(MINIMUM_RELEVANCE_THRESHOLD)
+                .similarityThreshold(dynamicConfig.getSimilarityThreshold())
                 .build()
         )
         return results.isNotEmpty()
@@ -86,7 +85,10 @@ class RagSearchService(
             "total_documents" to documentLoaderService.documentCount,
             "total_chunks" to documentLoaderService.chunkCount,
             "is_loaded" to documentLoaderService.isLoaded,
-            "status" to if (documentLoaderService.isLoaded) "ready" else "loading"
+            "loaded_from_cache" to documentLoaderService.loadedFromCache,
+            "status" to if (documentLoaderService.isLoaded) "ready" else "loading",
+            "similarity_threshold" to dynamicConfig.getSimilarityThreshold(),
+            "max_results" to dynamicConfig.getMaxResults()
         )
     }
 

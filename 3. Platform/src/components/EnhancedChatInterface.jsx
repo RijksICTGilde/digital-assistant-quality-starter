@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { enhancedAPI, demoResponses } from '../services/enhanced_api'
+import { adminAPI } from '../services/admin_api'
 import DocumentViewer from './DocumentViewer'
 
 const QUICK_SUGGESTIONS = {
@@ -148,6 +149,8 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
   const [showSuggestions, setShowSuggestions] = useState(true)
   const [viewingDocument, setViewingDocument] = useState(null)
   const [streamProgress, setStreamProgress] = useState(null) // For streaming progress
+  const [feedbackGiven, setFeedbackGiven] = useState({}) // Track which messages got feedback
+  const [feedbackComment, setFeedbackComment] = useState({}) // Track comment input for negative feedback
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -194,8 +197,14 @@ const EnhancedChatInterface = ({ userContext, onRestart }) => {
       // Try streaming first, fallback to regular if it fails
       try {
         response = await enhancedAPI.sendStreamingMessage(message, userContext, (event) => {
-          // Update progress based on stream events
-          setStreamProgress(event)
+          // Update progress based on stream events, preserving step info
+          setStreamProgress(prev => ({
+            ...prev,
+            ...event,
+            // Preserve step/totalSteps if new event doesn't have them
+            step: event.step ?? prev?.step,
+            totalSteps: event.totalSteps ?? event.total_steps ?? prev?.totalSteps
+          }))
         })
       } catch (streamError) {
         console.warn('Streaming failed, falling back to regular API:', streamError)
@@ -301,8 +310,52 @@ Als het probleem aanhoudt, neem contact op met support.`,
     handleSendMessage(suggestion)
   }
 
-  const handleFeedback = (messageId, isPositive) => {
-    console.log(`Feedback for message ${messageId}: ${isPositive ? 'positive' : 'negative'}`)
+  const handleFeedback = async (message, isPositive, comment = null) => {
+    const messageId = message.id
+
+    // Don't allow feedback twice
+    if (feedbackGiven[messageId]) return
+
+    try {
+      // Find the original user question (the message before this one)
+      const msgIndex = messages.findIndex(m => m.id === messageId)
+      const userMessage = msgIndex > 0 ? messages[msgIndex - 1] : null
+      const originalQuestion = userMessage?.content || 'Unknown'
+
+      await adminAPI.submitFeedback({
+        message_id: String(messageId),
+        rating: isPositive ? 'positive' : 'negative',
+        comment: comment || null,
+        original_question: originalQuestion,
+        response: message.content,
+        quality_scores: message.qualityScores || null,
+        was_improved: message.qualityImproved || false,
+        hallucination_detected: message.hallucinationDetected || false,
+        agent_type: message.qualityTrace?.find(t => t.action === 'agent_routing')?.dimension || 'general',
+        organization_type: userContext.selectedOrganization?.id || null
+      })
+
+      // Mark feedback as given
+      setFeedbackGiven(prev => ({
+        ...prev,
+        [messageId]: isPositive ? 'positive' : 'negative'
+      }))
+
+      // Clear comment if any
+      setFeedbackComment(prev => {
+        const next = { ...prev }
+        delete next[messageId]
+        return next
+      })
+
+    } catch (error) {
+      console.error('Failed to submit feedback:', error)
+      // Still mark as given to prevent repeated attempts
+      setFeedbackGiven(prev => ({
+        ...prev,
+        [messageId]: isPositive ? 'positive' : 'negative'
+      }))
+    }
   }
 
   const handleDocumentClick = (source) => {
@@ -684,21 +737,81 @@ Als het probleem aanhoudt, neem contact op met support.`,
               <span>⏱️ {formatProcessingTime(message.processingTime)}</span>
             )}
           </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => handleFeedback(message.id, true)}
-              className="hover:text-green-600 transition-colors"
-            >
-              <ThumbsUp className="w-3 h-3" />
-            </button>
-            <button
-              onClick={() => handleFeedback(message.id, false)}
-              className="hover:text-red-600 transition-colors"
-            >
-              <ThumbsDown className="w-3 h-3" />
-            </button>
+          <div className="flex items-center space-x-2">
+            {feedbackGiven[message.id] ? (
+              <span className={`text-xs px-2 py-1 rounded-full ${
+                feedbackGiven[message.id] === 'positive'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-red-100 text-red-700'
+              }`}>
+                {feedbackGiven[message.id] === 'positive' ? '👍 Bedankt!' : '👎 Bedankt!'}
+              </span>
+            ) : (
+              <>
+                <span className="text-xs text-chatbot-neutral-400 mr-1">Nuttig?</span>
+                <button
+                  onClick={() => handleFeedback(message, true)}
+                  className="p-1.5 hover:bg-green-50 hover:text-green-600 rounded transition-colors"
+                  title="Dit antwoord was nuttig"
+                >
+                  <ThumbsUp className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    // Show comment input for negative feedback
+                    setFeedbackComment(prev => ({
+                      ...prev,
+                      [message.id]: prev[message.id] !== undefined ? undefined : ''
+                    }))
+                  }}
+                  className="p-1.5 hover:bg-red-50 hover:text-red-600 rounded transition-colors"
+                  title="Dit antwoord was niet nuttig"
+                >
+                  <ThumbsDown className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
         </div>
+        {/* Negative feedback comment input */}
+        {feedbackComment[message.id] !== undefined && !feedbackGiven[message.id] && (
+          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-xs text-red-700 mb-2">Wat kon er beter? (optioneel)</p>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={feedbackComment[message.id] || ''}
+                onChange={(e) => setFeedbackComment(prev => ({
+                  ...prev,
+                  [message.id]: e.target.value
+                }))}
+                placeholder="Bijv. antwoord was onvolledig..."
+                className="flex-1 text-xs px-2 py-1.5 border border-red-300 rounded focus:outline-none focus:ring-1 focus:ring-red-400"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleFeedback(message, false, feedbackComment[message.id])
+                  }
+                }}
+              />
+              <button
+                onClick={() => handleFeedback(message, false, feedbackComment[message.id])}
+                className="px-3 py-1.5 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+              >
+                Verstuur
+              </button>
+              <button
+                onClick={() => setFeedbackComment(prev => {
+                  const next = { ...prev }
+                  delete next[message.id]
+                  return next
+                })}
+                className="px-2 py-1.5 text-red-600 text-xs hover:bg-red-100 rounded"
+              >
+                Annuleer
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -721,10 +834,10 @@ Als het probleem aanhoudt, neem contact op met support.`,
             </div>
             <div>
               <h1 className="text-lg font-semibold text-chatbot-neutral-900">
-                Enhanced AI Assistant
+                AI Kwaliteitsassistent
               </h1>
               <p className="text-sm text-chatbot-neutral-500">
-                {userContext.role?.name} • Quality-Aware RAG • Embabel GOAP Agent • Live Streaming
+                Quality-Aware RAG • Embabel GOAP Agent • Real-time Streaming
               </p>
             </div>
           </div>

@@ -35,11 +35,16 @@ export const enhancedAPI = {
       'national': 'rijk'
     }
 
+    // Map focus areas to string values (backend expects enum strings, not objects)
+    const mappedFocusAreas = (userContext.focusAreas || []).map(fa =>
+      typeof fa === 'string' ? fa : (fa?.id || fa?.value || 'innovation')
+    )
+
     const mappedContext = {
       role: mappedRole,
       roleName: userContext.role?.name || `${userContext.selectedChoice?.toUpperCase()} gebruiker`,
       projectPhase: userContext.projectPhase || userContext.selectedChoice,
-      focusAreas: userContext.focusAreas || [],
+      focusAreas: mappedFocusAreas,
       specificNeeds: userContext.specificNeeds || [],
       organizationType: userContext.selectedOrganization ?
         orgTypeMap[userContext.selectedOrganization.id] || 'overheid' : 'overheid',
@@ -130,11 +135,16 @@ export const enhancedAPI = {
         'national': 'rijk'
       }
 
+      // Map focus areas to string values (backend expects enum strings, not objects)
+      const mappedFocusAreas = (userContext.focusAreas || []).map(fa =>
+        typeof fa === 'string' ? fa : (fa?.id || fa?.value || 'innovation')
+      )
+
       const mappedContext = {
         role: mappedRole,
         roleName: userContext.role?.name || `${userContext.selectedChoice?.toUpperCase()} gebruiker`,
         projectPhase: userContext.projectPhase || userContext.selectedChoice,
-        focusAreas: userContext.focusAreas || [],
+        focusAreas: mappedFocusAreas,
         specificNeeds: userContext.specificNeeds || [],
         organizationType: userContext.selectedOrganization ?
           orgTypeMap[userContext.selectedOrganization.id] || 'overheid' : 'overheid',

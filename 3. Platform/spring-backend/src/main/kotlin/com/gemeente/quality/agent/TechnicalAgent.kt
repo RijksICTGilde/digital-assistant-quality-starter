@@ -5,28 +5,31 @@ import com.embabel.agent.api.annotation.AchievesGoal
 import com.embabel.agent.api.annotation.Agent
 import com.embabel.agent.api.common.OperationContext
 import com.gemeente.quality.agent.domain.*
-import com.gemeente.quality.config.QualityConfig
 import com.gemeente.quality.model.*
 import com.gemeente.quality.rag.RagSearchService
 import com.gemeente.quality.service.ContextPromptBuilder
+import com.gemeente.quality.service.DynamicConfigService
+import com.gemeente.quality.service.QualityEvaluationService
+import com.gemeente.quality.service.ReviewQueueService
 import org.slf4j.LoggerFactory
 
 /**
  * Specialized agent for technical AI implementation questions.
  * Handles questions about architecture, APIs, integrations, and technical best practices.
  *
- * Focuses on completeness (code examples, step-by-step guides).
+ * Uses the shared QualityEvaluationService to ensure dynamic thresholds are respected.
  */
 @Agent(description = "Technical specialist for AI implementation, architecture, APIs, Common Ground, and technical best practices for Dutch municipalities")
 class TechnicalAgent(
     private val ragSearchService: RagSearchService,
     private val promptBuilder: ContextPromptBuilder,
-    private val qualityConfig: QualityConfig
+    private val dynamicConfig: DynamicConfigService,
+    private val qualityEvaluationService: QualityEvaluationService,
+    private val reviewQueueService: ReviewQueueService
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
     companion object {
-        // Keywords that indicate this agent should handle the question
         val TRIGGER_KEYWORDS = listOf(
             "api", "architectuur", "integratie", "implementatie",
             "common ground", "haven", "nlx", "digikoppeling",
@@ -43,15 +46,15 @@ class TechnicalAgent(
     fun retrieveTechnicalContext(request: ChatMessage): RagContext {
         logger.info("[TechnicalAgent] Retrieving technical context for: ${request.message.take(60)}...")
 
-        val sources = ragSearchService.searchDocuments(request.message, 5)
+        val maxResults = dynamicConfig.getMaxResults()
+        val sources = ragSearchService.searchDocuments(request.message, maxResults)
 
-        // Also search for role-specific technical docs
         val developerSources = ragSearchService.getRoleSpecificDocuments(UserRole.DEVELOPER, 2)
         val itManagerSources = ragSearchService.getRoleSpecificDocuments(UserRole.IT_MANAGER, 2)
 
         val allSources = (sources + developerSources + itManagerSources)
             .distinctBy { it.documentId ?: it.title }
-            .take(5)
+            .take(maxResults)
 
         if (allSources.isEmpty()) {
             return RagContext(
@@ -126,30 +129,107 @@ Geef een technisch gedetailleerd antwoord met concrete stappen of voorbeelden:
         )
     }
 
-    @AchievesGoal(description = "Deliver technical response with implementation guidance")
+    @Action(description = "Evaluate quality of technical response against dynamic thresholds")
+    fun evaluateTechnicalQuality(
+        request: ChatMessage,
+        initialResponse: InitialResponse,
+        ragContext: RagContext,
+        context: OperationContext
+    ): QualityEvaluation {
+        logger.info("[TechnicalAgent] Evaluating quality with dynamic thresholds...")
+        return qualityEvaluationService.evaluateQuality(
+            originalQuestion = request.message,
+            response = initialResponse.mainAnswer,
+            ragContext = ragContext.formattedContext,
+            organizationType = request.context.organizationType,
+            context = context
+        )
+    }
+
+    @Action(description = "Improve technical response if quality is below thresholds")
+    fun improveTechnicalResponse(
+        request: ChatMessage,
+        initialResponse: InitialResponse,
+        evaluation: QualityEvaluation,
+        ragContext: RagContext,
+        context: OperationContext
+    ): ImprovedResponse {
+        logger.info("[TechnicalAgent] Checking if improvement needed...")
+        return qualityEvaluationService.improveIfNeeded(
+            originalQuestion = request.message,
+            originalResponse = initialResponse.mainAnswer,
+            evaluation = evaluation,
+            ragContext = ragContext.formattedContext,
+            organizationType = request.context.organizationType,
+            context = context
+        )
+    }
+
+    @AchievesGoal(description = "Deliver technical response with implementation guidance and quality evaluation")
     @Action(description = "Assemble final technical response with quality metadata")
     fun assembleTechnicalResponse(
         request: ChatMessage,
         initialResponse: InitialResponse,
+        evaluation: QualityEvaluation,
+        improvedResponse: ImprovedResponse,
         ragContext: RagContext
     ): QualityAssuredResponse {
-        logger.info("[TechnicalAgent] Assembling technical response...")
+        logger.info("[TechnicalAgent] Assembling technical response (improved=${improvedResponse.wasImproved})...")
 
-        val qualityScores = mapOf(
-            "relevance" to if (ragContext.hasRelevantSources) 0.85 else 0.5,
-            "tone" to 0.85,
-            "completeness" to 0.8,  // Technical responses aim for completeness
-            "policy_compliance" to 0.75  // Technical focus, less policy-heavy
-        )
+        val totalTimeMs = initialResponse.generationTimeMs +
+                evaluation.evaluationTimeMs +
+                improvedResponse.improvementTimeMs
+
+        val qualityScores = evaluation.scores.entries.associate { (dim, score) ->
+            dim.name.lowercase() to score
+        }
+
+        val thresholds = qualityEvaluationService.getThresholds()
+        val trace = mutableListOf<QualityTraceEntry>()
+
+        trace.add(QualityTraceEntry(
+            action = "technical_agent_selected",
+            timestampMs = System.currentTimeMillis() - totalTimeMs
+        ))
+
+        evaluation.scores.forEach { (dim, score) ->
+            val threshold = thresholds[dim] ?: 0.5
+            trace.add(QualityTraceEntry(
+                action = "evaluate_quality",
+                dimension = dim.name.lowercase(),
+                score = score,
+                passed = score >= threshold,
+                timestampMs = System.currentTimeMillis() - improvedResponse.improvementTimeMs
+            ))
+        }
+
+        if (improvedResponse.wasImproved) {
+            improvedResponse.improvementsApplied.forEach { dim ->
+                trace.add(QualityTraceEntry(
+                    action = "improve_response",
+                    dimension = dim,
+                    improvementApplied = "Response improved based on $dim feedback",
+                    timestampMs = System.currentTimeMillis()
+                ))
+            }
+        }
+
+        trace.add(QualityTraceEntry(
+            action = "assemble_technical_response",
+            timestampMs = System.currentTimeMillis()
+        ))
 
         val explanation = buildString {
             append("Dit antwoord is gegenereerd door de Technische Specialist agent. ")
             append("Complexiteit: ${initialResponse.complexity.name.lowercase()}. ")
+            if (improvedResponse.wasImproved) {
+                append("Automatisch verbeterd op: ${improvedResponse.improvementsApplied.joinToString(", ")}. ")
+            }
             append("Scores: ${qualityScores.entries.joinToString(", ") { "${it.key}: ${(it.value * 100).toInt()}%" }}")
         }
 
         val response = StructuredAIResponse(
-            mainAnswer = initialResponse.mainAnswer,
+            mainAnswer = improvedResponse.mainAnswer,
             responseType = ResponseType.TECHNICAL_GUIDANCE,
             confidenceLevel = initialResponse.confidenceLevel,
             complexity = initialResponse.complexity,
@@ -158,19 +238,71 @@ Geef een technisch gedetailleerd antwoord met concrete stappen of voorbeelden:
             needsHumanExpert = initialResponse.needsHumanExpert,
             expertReason = initialResponse.expertReason,
             expertType = initialResponse.expertType,
-            processingTimeMs = initialResponse.generationTimeMs.toInt(),
+            processingTimeMs = totalTimeMs.toInt(),
             qualityScores = qualityScores,
-            qualityTrace = listOf(
-                QualityTraceEntry(action = "technical_agent_selected", timestampMs = System.currentTimeMillis()),
-                QualityTraceEntry(action = "retrieve_technical_context", timestampMs = System.currentTimeMillis()),
-                QualityTraceEntry(action = "generate_technical_response", timestampMs = System.currentTimeMillis()),
-                QualityTraceEntry(action = "assemble_technical_response", timestampMs = System.currentTimeMillis())
-            ),
-            qualityImproved = false,
-            qualityExplanation = explanation
+            qualityTrace = trace,
+            qualityImproved = improvedResponse.wasImproved,
+            qualityExplanation = explanation,
+            originalAnswer = if (improvedResponse.wasImproved) initialResponse.mainAnswer else null,
+            hallucinationDetected = evaluation.hallucinationDetected,
+            ungroundedClaims = if (evaluation.ungroundedClaims.isNotEmpty()) evaluation.ungroundedClaims else null,
+            improvementIterations = if (improvedResponse.wasImproved) improvedResponse.iterationCount else null,
+            iterationHistory = if (improvedResponse.iterationHistory.isNotEmpty()) {
+                improvedResponse.iterationHistory.map { iter ->
+                    QualityIterationEntry(
+                        iteration = iter.iteration,
+                        overallScore = iter.overallScore,
+                        dimensionScores = iter.dimensionScores,
+                        passed = iter.passed
+                    )
+                }
+            } else null
         )
 
+        // Auto-flag for human review if quality concerns detected
+        autoFlagForReviewIfNeeded(request, response, evaluation, initialResponse)
+
         return QualityAssuredResponse(response = response)
+    }
+
+    private fun autoFlagForReviewIfNeeded(
+        request: ChatMessage,
+        response: StructuredAIResponse,
+        evaluation: QualityEvaluation,
+        initialResponse: InitialResponse
+    ) {
+        try {
+            val minQualityThreshold = listOf(
+                dynamicConfig.getRelevanceThreshold(),
+                dynamicConfig.getToneThreshold(),
+                dynamicConfig.getCompletenessThreshold(),
+                dynamicConfig.getPolicyComplianceThreshold()
+            ).average()
+
+            val flagReason: FlagReason? = when {
+                evaluation.hallucinationDetected -> FlagReason.HALLUCINATION
+                initialResponse.confidenceLevel == ConfidenceLevel.LOW -> FlagReason.LOW_CONFIDENCE
+                initialResponse.needsHumanExpert -> FlagReason.EXPERT_REQUIRED
+                evaluation.scores.values.average() < minQualityThreshold -> FlagReason.LOW_CONFIDENCE
+                else -> null
+            }
+
+            if (flagReason != null) {
+                reviewQueueService.addToQueue(
+                    originalQuestion = request.message,
+                    aiResponse = response.mainAnswer,
+                    flagReason = flagReason,
+                    qualityScores = response.qualityScores,
+                    hallucinationDetected = evaluation.hallucinationDetected,
+                    ungroundedClaims = evaluation.ungroundedClaims.takeIf { it.isNotEmpty() },
+                    confidenceLevel = response.confidenceLevel.value,
+                    agentType = "technical"
+                )
+                logger.info("Auto-flagged technical response for review: reason=$flagReason")
+            }
+        } catch (e: Exception) {
+            logger.warn("Failed to auto-flag response for review: ${e.message}")
+        }
     }
 
     private fun assessTechnicalComplexity(message: String): ComplexityLevel {
